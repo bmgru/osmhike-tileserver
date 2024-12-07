@@ -4,6 +4,7 @@
 /lnk*
 /docs
 .~lock*
+.gitignore
 
 # config files
 localconfig*.json
