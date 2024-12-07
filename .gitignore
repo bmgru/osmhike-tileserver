@@ -3,6 +3,7 @@
 /go*
 /lnk*
 /docs
+.~lock*
 
 # config files
 localconfig*.json
