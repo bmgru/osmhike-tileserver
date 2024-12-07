@@ -5,18 +5,18 @@ Osmhike is a highly adapted clone of Cyclosm (https://github.com/cyclosm/cyclosm
 
 It is composed of 4 parts:
 
-  * Addons and changes made by Osmhike to Cyclosm
-    covered by "CC BY-SA" license
+  * Addons and changes made by Osmhike to Cyclosm:
+    <br>They are covered by "CC BY-SA" license
 
-  * Cyclosm
-    see hereafter the contents of Cyclosm LICENSE.md 
+  * Cyclosm:
+    <br>see hereafter the contents of Cyclosm LICENSE.md 
 
   * Copy of 2 external packages, both covered by "GNU GPL-2" license
     -  package phyghtmap_2.23-1_all.deb, downloaded from   http://katze.tfiu.de/projects/phyghtmap/download.html
     -  package pyhgtmap 3.7, got from pip ( pip download -d somedirectory --no-deps pyhgtmap )
 
-  * It contains OSM data for the small "Andorra" "example
-    covered by "Open Data Commons Open Database License" (ODbL)
+  * OSM data for the small "Andorra" "example: 
+    <br>They are covered by "Open Data Commons Open Database License" (ODbL)
 
 ------------------------------------------------------------------
 COPY of LICENSE.md file from Cyclosm (sept2024) 
