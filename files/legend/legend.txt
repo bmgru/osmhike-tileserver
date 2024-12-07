@@ -1,0 +1,72 @@
+#################################################################################
+#
+# Legend definition file
+#
+#################################################################################
+
+block;
+poly;landuse=forest;forest
+poly;landuse=grass;grass
+poly;landuse=meadow;meadow
+block;
+poly;landuse=vineyard;wineyard
+poly;landuse=orchard;orchard
+
+
+block;
+poly;natural=glacier;glacier
+poly;natural=wetland;wetland
+poly;natural=sand;sand/beach/dune
+block;
+poly;natural=scrub;scrub
+poly;natural=heath;heath
+
+block;
+# must add dummy landuse attribute, otherwise it will not be converted to a polygon !
+poly;boundary=national_park,landuse=xxx;protected area
+
+block;
+line;railway=rail;railway
+block;
+line;highway=motorway;motorway/trunk
+line;highway=primary;primary road
+line;highway=secondary;secondary road
+line;highway=tertiary;tertiary road
+line;highway=unclassified;other small road
+block;
+line;highway=secondary,maxspeed=32;Max 32km/h
+line;highway=secondary,maxspeed=20;Max 20km/h
+line;highway=secondary,maxspeed=9;Max 10km/h
+block;
+line;highway=cycleway;cycleway
+line;highway=secondary,motor_vehicle=no;road forbidden to motor vehicles
+
+block;
+line;highway=unclassified,cycleway;left=track;segregated cycleway
+line;highway=unclassified,cycleway;left=track,cycleway;left;segregated=no;shared cycleway
+line;highway=unclassified,cycleway;left=lane;cycleway on lane
+line;highway=unclassified,cycleway;left=share_busway;cycleway on busway
+line;highway=unclassified,sidewalk;left;bicycle=yes;cycleway on sidewalk
+
+block;
+line;highway=track,smoothness=good;Track
+line;highway=bridleway,smoothness=good;Bridleway
+line;highway=footway,smoothness=good;Footway
+
+block;
+line;highway=track,smoothness=good;Track (good surface)
+line;highway=track,smoothness=bad;Track (cyclocross )
+line;highway=track,smoothness=horrible;Track (mountain bike )
+line;highway=track,bicycle=no;Track (not for bike)
+block;
+line;highway=path,smoothness=good;Path (good cyclo surface)
+line;highway=path,smoothness=bad;Path (cyclocross )
+line;highway=path,smoothness=horrible;Path (mountain bike )
+block;
+line;highway=path,bicycle=no;Path (nobike,easy )
+line;highway=path,bicycle=no,sac_scale=alpine_hiking;Path (nobike,alpine medium )
+line;highway=path,bicycle=no,sac_scale=demanding_alpine_hiking;Path (nobike,alpine high )
+block;
+line;route=bicycle,network=lcn;Bike route (local)
+line;route=bicycle,network=rcn;Bike route (non local)
+line;route=mtb,network=rcn;MountainBike route

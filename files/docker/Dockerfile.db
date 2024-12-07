@@ -1,0 +1,9 @@
+FROM mdillon/postgis
+
+# add a script for modifying the database configuration
+ADD ./postgres-conf.sh /docker-entrypoint-initdb.d
+
+# Can't use this: the startup script would have troubles to modify permissions of database directory
+#USER 1000
+
+

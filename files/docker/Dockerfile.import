@@ -1,0 +1,47 @@
+######################################################################################################
+#
+# Dockerfile for building "import" image , using recent LongTermSupport version ubuntu:noble
+#
+#  it requires a complex installation of pip environment + pip packages , just to make pyhgtmap work
+######################################################################################################
+
+FROM ubuntu:noble
+
+# tell that installs are made in non interactive mode
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt update && \
+    apt  install --no-install-recommends -y ca-certificates curl gnupg && \
+    echo "\n------------------ Install required tools --------------------" && \
+    apt install --no-install-recommends -y apt-utils python3 python3-prettytable python3-yaml osm2pgsql osmctools  postgresql-client wget gdal-bin  && \
+    echo "\n------------------ Final cleaning to save disk space --------------------" && \
+    apt clean &&  rm -rf /var/lib/apt/lists/* 
+
+RUN echo "\n------------------ Install stuff needed for pip --------------------" && \
+    apt update  && \
+    apt install --no-install-recommends -y build-essential python3-venv python3-pip  && \
+    echo "\n------------------ Install pyhgtmap needed dependencies ( those available from apt ) --------------------" && \
+    apt install --no-install-recommends -y    python3-pkg-resources python3-matplotlib python3-bs4 python3-numpy python3-contourpy python3-pybind11  && \
+    echo "\n------------------ Final cleaning to save disk space --------------------" && \
+    apt clean &&  rm -rf /var/lib/apt/lists/* 
+
+# Prepare the execution of pyhgtmap : install the needed dependecies using pip 
+# note that COPY can only take files from the "build context" defined in docker-compose.yml 
+# pip installations are done with a script, because much easier than Docker RUN
+
+RUN mkdir -p /packages
+COPY ./pip-installs.sh /packages
+RUN bash /packages/pip-installs.sh
+
+
+
+# Directory /osmhike is created by volume mapping of the project directory , defined in docker-compose.yml
+WORKDIR /osmhike
+
+USER 1000
+
+# the final executed command will be ENTRYPOINT  CMD
+# but CMD will be replaced by arguments ( if there are some) of "docker-compose run myimage arguments"
+# Note:  we MUST use the array format [ "xxx" , "yyy" ...] otherwise there is the risk that CMD is not taken into account
+ENTRYPOINT [ "sh" , "docker/docker-startup.sh" ]
+CMD  [ "import" ]

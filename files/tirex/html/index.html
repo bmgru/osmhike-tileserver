@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>osmhike</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="leaflet/leaflet.css" />
+    <script src="leaflet/leaflet.min.js"></script>
+    <script src="leaflet-hash.js"></script>
+</head>
+
+<body style="margin: 0;">
+    <div id="map" style="position: absolute; width: 100%; height: 100%;"></div>
+
+    <script>
+        var map = L.map('map').setView([0, 0], 3);
+
+/* Attempt to solve timeout troubles, but does not work
+const DelayedTileLayer = L.TileLayer.extend({
+	_tileOnLoad: function (done, tile) {
+  		setTimeout(function () {
+      	 L.TileLayer.prototype._tileOnLoad.call(this, done, tile);
+      }, 1000000)
+  }
+})
+ //const delayed=new DelayedTileLayer('/tiles/osmhike/{z}/{x}/{y}.png', {      maxZoom: 20,        }).addTo(map);
+*/
+
+        L.tileLayer('/tiles/osmhike/{z}/{x}/{y}.png', {
+              maxZoom: 20,
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'        
+        }).addTo(map);
+
+
+        // add Zoom/lat/lon in the browser url bar
+        var hash = new L.Hash(map);
+
+        
+        // add a box showing zoom level
+        const ZoomViewer = L.Control.extend({
+
+            options: {
+                position: 'topleft'
+            },
+
+		    onAdd() {
+			    const container = L.DomUtil.create('div');
+			    const gauge = L.DomUtil.create('div');
+			    //container.style.width = '200px';
+			    container.style.background = 'rgba(255,255,0,0.5)';
+
+			    container.style.textAlign = 'left';
+                container.style.border = '1px solid black';
+                gauge.style.margin='2px';
+                gauge.style.fontSize='large';
+			    map.on('zoomstart zoom zoomend', (ev) => {
+				    gauge.innerHTML = `Zoom=${map.getZoom()}`;
+			    });
+			    container.appendChild(gauge);
+			    return container;
+		    }
+	    });
+
+	    const zoomViewerControl = (new ZoomViewer()).addTo(map);
+    </script>
+
+</body>
+</html>

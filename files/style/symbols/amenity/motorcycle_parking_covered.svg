@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="64"
+   height="64"
+   viewBox="64 -64 64 64"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="motorcycle_parking_covered.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="2.8284271"
+     inkscape:cx="119.80095"
+     inkscape:cy="19.189072"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="true"
+     inkscape:window-width="1366"
+     inkscape:window-height="719"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:pagecheckerboard="true"
+     units="px"
+     showguides="false"
+     viewbox-x="0"
+     scale-x="1"
+     viewbox-y="-64">
+    <inkscape:grid
+       type="xygrid"
+       id="grid851"
+       empspacing="16"
+       dotted="false" />
+    <inkscape:grid
+       type="xygrid"
+       id="grid900"
+       spacingx="64"
+       spacingy="64"
+       color="#000062"
+       opacity="0.1254902"
+       empcolor="#0d0029"
+       empopacity="0.25098039"
+       empspacing="1"
+       dotted="false" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Calque 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-327.13332)">
+    <g
+       id="g5326-0"
+       transform="matrix(3.9566814,0,0,3.9566814,-219.4707,-94.88051)"
+       style="fill:#0060ff;fill-opacity:1">
+      <path
+         style="fill:#0060ff;fill-opacity:1;stroke:none;stroke-width:0.25273705px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 75.329922,93.812306 1.002429,1.736257 3.50716,-2.02486 3.524979,2.035147 0.996406,-1.725824 -4.53175,-2.616407 z"
+         id="path876-93"
+         inkscape:connector-curvature="0" />
+      <g
+         style="fill:#0060ff;fill-opacity:1;stroke:#020202;stroke-width:2;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         transform="translate(-0.13363476,-1.9810173)"
+         id="g878-6">
+        <g
+           style="fill:#0060ff;fill-opacity:1;stroke:#020202;stroke-width:2;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           transform="translate(0.18143118)"
+           id="g882-0">
+          <g
+             style="fill:#0060ff;fill-opacity:1;stroke:#0000ff;stroke-opacity:1"
+             transform="translate(0.41969682,-0.37797619)"
+             id="g886-6" />
+        </g>
+      </g>
+      <g
+         id="g5317-2"
+         transform="translate(-0.03628983,-1.1714514)"
+         style="fill:#0060ff;fill-opacity:1">
+        <circle
+           style="opacity:1;fill:#0060ff;fill-opacity:1;stroke:#ffffff;stroke-width:1.70000005;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+           id="path815-3-5-6"
+           cx="79.846779"
+           cy="100.53709"
+           r="3.96875" />
+      </g>
+    </g>
+  </g>
+</svg>

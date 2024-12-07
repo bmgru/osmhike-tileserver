@@ -1,0 +1,727 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version='0.6' generator='osmconvert 0.8.10'>
+  <node id="10000000" lat="-0.004" lon="0.001" >
+  </node>
+  <node id="10000001" lat="-0.004" lon="0.005" >
+  </node>
+  <node id="10000002" lat="-0.006" lon="0.005" >
+  </node>
+  <node id="10000003" lat="-0.006" lon="0.001" >
+  </node>
+  <node id="10000004" lat="-0.005" lon="0.0054" >
+     <tag k="label" v="forest" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000006" lat="-0.004" lon="0.017" >
+  </node>
+  <node id="10000007" lat="-0.004" lon="0.021" >
+  </node>
+  <node id="10000008" lat="-0.006" lon="0.021" >
+  </node>
+  <node id="10000009" lat="-0.006" lon="0.017" >
+  </node>
+  <node id="10000010" lat="-0.005" lon="0.021400000000000002" >
+     <tag k="label" v="grass" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000012" lat="-0.004" lon="0.033" >
+  </node>
+  <node id="10000013" lat="-0.004" lon="0.037000000000000005" >
+  </node>
+  <node id="10000014" lat="-0.006" lon="0.037000000000000005" >
+  </node>
+  <node id="10000015" lat="-0.006" lon="0.033" >
+  </node>
+  <node id="10000016" lat="-0.005" lon="0.0374" >
+     <tag k="label" v="meadow" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000018" lat="-0.007" lon="0.001" >
+  </node>
+  <node id="10000019" lat="-0.007" lon="0.005" >
+  </node>
+  <node id="10000020" lat="-0.009000000000000001" lon="0.005" >
+  </node>
+  <node id="10000021" lat="-0.009000000000000001" lon="0.001" >
+  </node>
+  <node id="10000022" lat="-0.008" lon="0.0054" >
+     <tag k="label" v="wineyard" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000024" lat="-0.007" lon="0.017" >
+  </node>
+  <node id="10000025" lat="-0.007" lon="0.021" >
+  </node>
+  <node id="10000026" lat="-0.009000000000000001" lon="0.021" >
+  </node>
+  <node id="10000027" lat="-0.009000000000000001" lon="0.017" >
+  </node>
+  <node id="10000028" lat="-0.008" lon="0.021400000000000002" >
+     <tag k="label" v="orchard" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000030" lat="-0.010000000000000002" lon="0.001" >
+  </node>
+  <node id="10000031" lat="-0.010000000000000002" lon="0.005" >
+  </node>
+  <node id="10000032" lat="-0.012000000000000002" lon="0.005" >
+  </node>
+  <node id="10000033" lat="-0.012000000000000002" lon="0.001" >
+  </node>
+  <node id="10000034" lat="-0.011000000000000003" lon="0.0054" >
+     <tag k="label" v="glacier" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000036" lat="-0.010000000000000002" lon="0.017" >
+  </node>
+  <node id="10000037" lat="-0.010000000000000002" lon="0.021" >
+  </node>
+  <node id="10000038" lat="-0.012000000000000002" lon="0.021" >
+  </node>
+  <node id="10000039" lat="-0.012000000000000002" lon="0.017" >
+  </node>
+  <node id="10000040" lat="-0.011000000000000003" lon="0.021400000000000002" >
+     <tag k="label" v="wetland" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000042" lat="-0.010000000000000002" lon="0.033" >
+  </node>
+  <node id="10000043" lat="-0.010000000000000002" lon="0.037000000000000005" >
+  </node>
+  <node id="10000044" lat="-0.012000000000000002" lon="0.037000000000000005" >
+  </node>
+  <node id="10000045" lat="-0.012000000000000002" lon="0.033" >
+  </node>
+  <node id="10000046" lat="-0.011000000000000003" lon="0.0374" >
+     <tag k="label" v="sand/beach/dune" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000048" lat="-0.013000000000000001" lon="0.001" >
+  </node>
+  <node id="10000049" lat="-0.013000000000000001" lon="0.005" >
+  </node>
+  <node id="10000050" lat="-0.015000000000000001" lon="0.005" >
+  </node>
+  <node id="10000051" lat="-0.015000000000000001" lon="0.001" >
+  </node>
+  <node id="10000052" lat="-0.014000000000000002" lon="0.0054" >
+     <tag k="label" v="scrub" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000054" lat="-0.013000000000000001" lon="0.017" >
+  </node>
+  <node id="10000055" lat="-0.013000000000000001" lon="0.021" >
+  </node>
+  <node id="10000056" lat="-0.015000000000000001" lon="0.021" >
+  </node>
+  <node id="10000057" lat="-0.015000000000000001" lon="0.017" >
+  </node>
+  <node id="10000058" lat="-0.014000000000000002" lon="0.021400000000000002" >
+     <tag k="label" v="heath" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000060" lat="-0.016" lon="0.001" >
+  </node>
+  <node id="10000061" lat="-0.016" lon="0.005" >
+  </node>
+  <node id="10000062" lat="-0.018000000000000002" lon="0.005" >
+  </node>
+  <node id="10000063" lat="-0.018000000000000002" lon="0.001" >
+  </node>
+  <node id="10000064" lat="-0.017" lon="0.0054" >
+     <tag k="label" v="protected area" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000066" lat="-0.020000000000000004" lon="0.001" >
+  </node>
+  <node id="10000067" lat="-0.020000000000000004" lon="0.005" >
+  </node>
+  <node id="10000068" lat="-0.020000000000000004" lon="0.005" >
+     <tag k="label" v="railway" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000070" lat="-0.023000000000000007" lon="0.001" >
+  </node>
+  <node id="10000071" lat="-0.023000000000000007" lon="0.005" >
+  </node>
+  <node id="10000072" lat="-0.023000000000000007" lon="0.005" >
+     <tag k="label" v="motorway/trunk" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000074" lat="-0.023000000000000007" lon="0.017" >
+  </node>
+  <node id="10000075" lat="-0.023000000000000007" lon="0.021" >
+  </node>
+  <node id="10000076" lat="-0.023000000000000007" lon="0.021" >
+     <tag k="label" v="primary road" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000078" lat="-0.023000000000000007" lon="0.033" >
+  </node>
+  <node id="10000079" lat="-0.023000000000000007" lon="0.037000000000000005" >
+  </node>
+  <node id="10000080" lat="-0.023000000000000007" lon="0.037000000000000005" >
+     <tag k="label" v="secondary road" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000082" lat="-0.023000000000000007" lon="0.049" >
+  </node>
+  <node id="10000083" lat="-0.023000000000000007" lon="0.053000000000000005" >
+  </node>
+  <node id="10000084" lat="-0.023000000000000007" lon="0.053000000000000005" >
+     <tag k="label" v="tertiary road" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000086" lat="-0.023000000000000007" lon="0.065" >
+  </node>
+  <node id="10000087" lat="-0.023000000000000007" lon="0.069" >
+  </node>
+  <node id="10000088" lat="-0.023000000000000007" lon="0.069" >
+     <tag k="label" v="other small road" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000090" lat="-0.02600000000000001" lon="0.001" >
+  </node>
+  <node id="10000091" lat="-0.02600000000000001" lon="0.005" >
+  </node>
+  <node id="10000092" lat="-0.02600000000000001" lon="0.005" >
+     <tag k="label" v="Max 32km/h" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000094" lat="-0.02600000000000001" lon="0.017" >
+  </node>
+  <node id="10000095" lat="-0.02600000000000001" lon="0.021" >
+  </node>
+  <node id="10000096" lat="-0.02600000000000001" lon="0.021" >
+     <tag k="label" v="Max 20km/h" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000098" lat="-0.02600000000000001" lon="0.033" >
+  </node>
+  <node id="10000099" lat="-0.02600000000000001" lon="0.037000000000000005" >
+  </node>
+  <node id="10000100" lat="-0.02600000000000001" lon="0.037000000000000005" >
+     <tag k="label" v="Max 10km/h" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000102" lat="-0.029000000000000012" lon="0.001" >
+  </node>
+  <node id="10000103" lat="-0.029000000000000012" lon="0.005" >
+  </node>
+  <node id="10000104" lat="-0.029000000000000012" lon="0.005" >
+     <tag k="label" v="cycleway" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000106" lat="-0.029000000000000012" lon="0.017" >
+  </node>
+  <node id="10000107" lat="-0.029000000000000012" lon="0.021" >
+  </node>
+  <node id="10000108" lat="-0.029000000000000012" lon="0.021" >
+     <tag k="label" v="road forbidden to motor vehicles" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000110" lat="-0.032000000000000015" lon="0.001" >
+  </node>
+  <node id="10000111" lat="-0.032000000000000015" lon="0.005" >
+  </node>
+  <node id="10000112" lat="-0.032000000000000015" lon="0.005" >
+     <tag k="label" v="left=track" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000114" lat="-0.032000000000000015" lon="0.017" >
+  </node>
+  <node id="10000115" lat="-0.032000000000000015" lon="0.021" >
+  </node>
+  <node id="10000116" lat="-0.032000000000000015" lon="0.021" >
+     <tag k="label" v="left=track,cycleway" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000118" lat="-0.032000000000000015" lon="0.033" >
+  </node>
+  <node id="10000119" lat="-0.032000000000000015" lon="0.037000000000000005" >
+  </node>
+  <node id="10000120" lat="-0.032000000000000015" lon="0.037000000000000005" >
+     <tag k="label" v="left=lane" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000122" lat="-0.032000000000000015" lon="0.049" >
+  </node>
+  <node id="10000123" lat="-0.032000000000000015" lon="0.053000000000000005" >
+  </node>
+  <node id="10000124" lat="-0.032000000000000015" lon="0.053000000000000005" >
+     <tag k="label" v="left=share_busway" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000126" lat="-0.032000000000000015" lon="0.065" >
+  </node>
+  <node id="10000127" lat="-0.032000000000000015" lon="0.069" >
+  </node>
+  <node id="10000128" lat="-0.032000000000000015" lon="0.069" >
+     <tag k="label" v="left" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000130" lat="-0.03500000000000002" lon="0.001" >
+  </node>
+  <node id="10000131" lat="-0.03500000000000002" lon="0.005" >
+  </node>
+  <node id="10000132" lat="-0.03500000000000002" lon="0.005" >
+     <tag k="label" v="Track" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000134" lat="-0.03500000000000002" lon="0.017" >
+  </node>
+  <node id="10000135" lat="-0.03500000000000002" lon="0.021" >
+  </node>
+  <node id="10000136" lat="-0.03500000000000002" lon="0.021" >
+     <tag k="label" v="Bridleway" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000138" lat="-0.03500000000000002" lon="0.033" >
+  </node>
+  <node id="10000139" lat="-0.03500000000000002" lon="0.037000000000000005" >
+  </node>
+  <node id="10000140" lat="-0.03500000000000002" lon="0.037000000000000005" >
+     <tag k="label" v="Footway" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000142" lat="-0.03800000000000002" lon="0.001" >
+  </node>
+  <node id="10000143" lat="-0.03800000000000002" lon="0.005" >
+  </node>
+  <node id="10000144" lat="-0.03800000000000002" lon="0.005" >
+     <tag k="label" v="Track (good surface)" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000146" lat="-0.03800000000000002" lon="0.017" >
+  </node>
+  <node id="10000147" lat="-0.03800000000000002" lon="0.021" >
+  </node>
+  <node id="10000148" lat="-0.03800000000000002" lon="0.021" >
+     <tag k="label" v="Track (cyclocross )" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000150" lat="-0.03800000000000002" lon="0.033" >
+  </node>
+  <node id="10000151" lat="-0.03800000000000002" lon="0.037000000000000005" >
+  </node>
+  <node id="10000152" lat="-0.03800000000000002" lon="0.037000000000000005" >
+     <tag k="label" v="Track (mountain bike )" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000154" lat="-0.03800000000000002" lon="0.049" >
+  </node>
+  <node id="10000155" lat="-0.03800000000000002" lon="0.053000000000000005" >
+  </node>
+  <node id="10000156" lat="-0.03800000000000002" lon="0.053000000000000005" >
+     <tag k="label" v="Track (not for bike)" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000158" lat="-0.04100000000000002" lon="0.001" >
+  </node>
+  <node id="10000159" lat="-0.04100000000000002" lon="0.005" >
+  </node>
+  <node id="10000160" lat="-0.04100000000000002" lon="0.005" >
+     <tag k="label" v="Path (good cyclo surface)" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000162" lat="-0.04100000000000002" lon="0.017" >
+  </node>
+  <node id="10000163" lat="-0.04100000000000002" lon="0.021" >
+  </node>
+  <node id="10000164" lat="-0.04100000000000002" lon="0.021" >
+     <tag k="label" v="Path (cyclocross )" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000166" lat="-0.04100000000000002" lon="0.033" >
+  </node>
+  <node id="10000167" lat="-0.04100000000000002" lon="0.037000000000000005" >
+  </node>
+  <node id="10000168" lat="-0.04100000000000002" lon="0.037000000000000005" >
+     <tag k="label" v="Path (mountain bike )" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000170" lat="-0.044000000000000025" lon="0.001" >
+  </node>
+  <node id="10000171" lat="-0.044000000000000025" lon="0.005" >
+  </node>
+  <node id="10000172" lat="-0.044000000000000025" lon="0.005" >
+     <tag k="label" v="Path (nobike,easy )" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000174" lat="-0.044000000000000025" lon="0.017" >
+  </node>
+  <node id="10000175" lat="-0.044000000000000025" lon="0.021" >
+  </node>
+  <node id="10000176" lat="-0.044000000000000025" lon="0.021" >
+     <tag k="label" v="Path (nobike,alpine medium )" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000178" lat="-0.044000000000000025" lon="0.033" >
+  </node>
+  <node id="10000179" lat="-0.044000000000000025" lon="0.037000000000000005" >
+  </node>
+  <node id="10000180" lat="-0.044000000000000025" lon="0.037000000000000005" >
+     <tag k="label" v="Path (nobike,alpine high )" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000182" lat="-0.04700000000000003" lon="0.001" >
+  </node>
+  <node id="10000183" lat="-0.04700000000000003" lon="0.005" >
+  </node>
+  <node id="10000184" lat="-0.04700000000000003" lon="0.005" >
+     <tag k="label" v="Bike route (local)" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000186" lat="-0.04700000000000003" lon="0.017" >
+  </node>
+  <node id="10000187" lat="-0.04700000000000003" lon="0.021" >
+  </node>
+  <node id="10000188" lat="-0.04700000000000003" lon="0.021" >
+     <tag k="label" v="Bike route (non local)" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000190" lat="-0.04700000000000003" lon="0.033" >
+  </node>
+  <node id="10000191" lat="-0.04700000000000003" lon="0.037000000000000005" >
+  </node>
+  <node id="10000192" lat="-0.04700000000000003" lon="0.037000000000000005" >
+     <tag k="label" v="MountainBike route" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+  <node id="10000194" lat="0" lon="0" >
+  </node>
+  <node id="10000195" lat="0" lon="0.08787963867186477" >
+  </node>
+  <node id="10000196" lat="-0.05492064588659203" lon="0.08787963867186477" >
+  </node>
+  <node id="10000197" lat="-0.05492064588659203" lon="0" >
+  </node>
+  <node id="10000198" lat="0.002" lon="0.043939819335932384" >
+     <tag k="label" v="LEGEND" />
+     <tag k="name" v="##LEGEND##" />
+  </node>
+<way id="10000004">
+  <tag k="landuse"  v="forest" />
+  <nd ref="10000000"  />
+  <nd ref="10000001"  /> 
+  <nd ref="10000002"  /> 
+  <nd ref="10000003"  /> 
+  <nd ref="10000000"  /> 
+</way>
+
+<way id="10000010">
+  <tag k="landuse"  v="grass" />
+  <nd ref="10000006"  />
+  <nd ref="10000007"  /> 
+  <nd ref="10000008"  /> 
+  <nd ref="10000009"  /> 
+  <nd ref="10000006"  /> 
+</way>
+
+<way id="10000016">
+  <tag k="landuse"  v="meadow" />
+  <nd ref="10000012"  />
+  <nd ref="10000013"  /> 
+  <nd ref="10000014"  /> 
+  <nd ref="10000015"  /> 
+  <nd ref="10000012"  /> 
+</way>
+
+<way id="10000022">
+  <tag k="landuse"  v="vineyard" />
+  <nd ref="10000018"  />
+  <nd ref="10000019"  /> 
+  <nd ref="10000020"  /> 
+  <nd ref="10000021"  /> 
+  <nd ref="10000018"  /> 
+</way>
+
+<way id="10000028">
+  <tag k="landuse"  v="orchard" />
+  <nd ref="10000024"  />
+  <nd ref="10000025"  /> 
+  <nd ref="10000026"  /> 
+  <nd ref="10000027"  /> 
+  <nd ref="10000024"  /> 
+</way>
+
+<way id="10000034">
+  <tag k="natural"  v="glacier" />
+  <nd ref="10000030"  />
+  <nd ref="10000031"  /> 
+  <nd ref="10000032"  /> 
+  <nd ref="10000033"  /> 
+  <nd ref="10000030"  /> 
+</way>
+
+<way id="10000040">
+  <tag k="natural"  v="wetland" />
+  <nd ref="10000036"  />
+  <nd ref="10000037"  /> 
+  <nd ref="10000038"  /> 
+  <nd ref="10000039"  /> 
+  <nd ref="10000036"  /> 
+</way>
+
+<way id="10000046">
+  <tag k="natural"  v="sand" />
+  <nd ref="10000042"  />
+  <nd ref="10000043"  /> 
+  <nd ref="10000044"  /> 
+  <nd ref="10000045"  /> 
+  <nd ref="10000042"  /> 
+</way>
+
+<way id="10000052">
+  <tag k="natural"  v="scrub" />
+  <nd ref="10000048"  />
+  <nd ref="10000049"  /> 
+  <nd ref="10000050"  /> 
+  <nd ref="10000051"  /> 
+  <nd ref="10000048"  /> 
+</way>
+
+<way id="10000058">
+  <tag k="natural"  v="heath" />
+  <nd ref="10000054"  />
+  <nd ref="10000055"  /> 
+  <nd ref="10000056"  /> 
+  <nd ref="10000057"  /> 
+  <nd ref="10000054"  /> 
+</way>
+
+<way id="10000064">
+  <tag k="boundary"  v="national_park" />
+  <tag k="landuse"  v="xxx" />
+  <nd ref="10000060"  />
+  <nd ref="10000061"  /> 
+  <nd ref="10000062"  /> 
+  <nd ref="10000063"  /> 
+  <nd ref="10000060"  /> 
+</way>
+
+<way id="10000068">
+  <tag k="railway"  v="rail" />
+  <nd ref="10000066"  />
+  <nd ref="10000067"  /> 
+</way>
+
+<way id="10000072">
+  <tag k="highway"  v="motorway" />
+  <nd ref="10000070"  />
+  <nd ref="10000071"  /> 
+</way>
+
+<way id="10000076">
+  <tag k="highway"  v="primary" />
+  <nd ref="10000074"  />
+  <nd ref="10000075"  /> 
+</way>
+
+<way id="10000080">
+  <tag k="highway"  v="secondary" />
+  <nd ref="10000078"  />
+  <nd ref="10000079"  /> 
+</way>
+
+<way id="10000084">
+  <tag k="highway"  v="tertiary" />
+  <nd ref="10000082"  />
+  <nd ref="10000083"  /> 
+</way>
+
+<way id="10000088">
+  <tag k="highway"  v="unclassified" />
+  <nd ref="10000086"  />
+  <nd ref="10000087"  /> 
+</way>
+
+<way id="10000092">
+  <tag k="highway"  v="secondary" />
+  <tag k="maxspeed"  v="32" />
+  <nd ref="10000090"  />
+  <nd ref="10000091"  /> 
+</way>
+
+<way id="10000096">
+  <tag k="highway"  v="secondary" />
+  <tag k="maxspeed"  v="20" />
+  <nd ref="10000094"  />
+  <nd ref="10000095"  /> 
+</way>
+
+<way id="10000100">
+  <tag k="highway"  v="secondary" />
+  <tag k="maxspeed"  v="9" />
+  <nd ref="10000098"  />
+  <nd ref="10000099"  /> 
+</way>
+
+<way id="10000104">
+  <tag k="highway"  v="cycleway" />
+  <nd ref="10000102"  />
+  <nd ref="10000103"  /> 
+</way>
+
+<way id="10000108">
+  <tag k="highway"  v="secondary" />
+  <tag k="motor_vehicle"  v="no" />
+  <nd ref="10000106"  />
+  <nd ref="10000107"  /> 
+</way>
+
+<way id="10000112">
+  <tag k="highway"  v="unclassified" />
+  <nd ref="10000110"  />
+  <nd ref="10000111"  /> 
+</way>
+
+<way id="10000116">
+  <tag k="highway"  v="unclassified" />
+  <nd ref="10000114"  />
+  <nd ref="10000115"  /> 
+</way>
+
+<way id="10000120">
+  <tag k="highway"  v="unclassified" />
+  <nd ref="10000118"  />
+  <nd ref="10000119"  /> 
+</way>
+
+<way id="10000124">
+  <tag k="highway"  v="unclassified" />
+  <nd ref="10000122"  />
+  <nd ref="10000123"  /> 
+</way>
+
+<way id="10000128">
+  <tag k="highway"  v="unclassified" />
+  <nd ref="10000126"  />
+  <nd ref="10000127"  /> 
+</way>
+
+<way id="10000132">
+  <tag k="highway"  v="track" />
+  <tag k="smoothness"  v="good" />
+  <nd ref="10000130"  />
+  <nd ref="10000131"  /> 
+</way>
+
+<way id="10000136">
+  <tag k="highway"  v="bridleway" />
+  <tag k="smoothness"  v="good" />
+  <nd ref="10000134"  />
+  <nd ref="10000135"  /> 
+</way>
+
+<way id="10000140">
+  <tag k="highway"  v="footway" />
+  <tag k="smoothness"  v="good" />
+  <nd ref="10000138"  />
+  <nd ref="10000139"  /> 
+</way>
+
+<way id="10000144">
+  <tag k="highway"  v="track" />
+  <tag k="smoothness"  v="good" />
+  <nd ref="10000142"  />
+  <nd ref="10000143"  /> 
+</way>
+
+<way id="10000148">
+  <tag k="highway"  v="track" />
+  <tag k="smoothness"  v="bad" />
+  <nd ref="10000146"  />
+  <nd ref="10000147"  /> 
+</way>
+
+<way id="10000152">
+  <tag k="highway"  v="track" />
+  <tag k="smoothness"  v="horrible" />
+  <nd ref="10000150"  />
+  <nd ref="10000151"  /> 
+</way>
+
+<way id="10000156">
+  <tag k="highway"  v="track" />
+  <tag k="bicycle"  v="no" />
+  <nd ref="10000154"  />
+  <nd ref="10000155"  /> 
+</way>
+
+<way id="10000160">
+  <tag k="highway"  v="path" />
+  <tag k="smoothness"  v="good" />
+  <nd ref="10000158"  />
+  <nd ref="10000159"  /> 
+</way>
+
+<way id="10000164">
+  <tag k="highway"  v="path" />
+  <tag k="smoothness"  v="bad" />
+  <nd ref="10000162"  />
+  <nd ref="10000163"  /> 
+</way>
+
+<way id="10000168">
+  <tag k="highway"  v="path" />
+  <tag k="smoothness"  v="horrible" />
+  <nd ref="10000166"  />
+  <nd ref="10000167"  /> 
+</way>
+
+<way id="10000172">
+  <tag k="highway"  v="path" />
+  <tag k="bicycle"  v="no" />
+  <nd ref="10000170"  />
+  <nd ref="10000171"  /> 
+</way>
+
+<way id="10000176">
+  <tag k="highway"  v="path" />
+  <tag k="bicycle"  v="no" />
+  <tag k="sac_scale"  v="alpine_hiking" />
+  <nd ref="10000174"  />
+  <nd ref="10000175"  /> 
+</way>
+
+<way id="10000180">
+  <tag k="highway"  v="path" />
+  <tag k="bicycle"  v="no" />
+  <tag k="sac_scale"  v="demanding_alpine_hiking" />
+  <nd ref="10000178"  />
+  <nd ref="10000179"  /> 
+</way>
+
+<way id="10000184">
+  <tag k="route"  v="bicycle" />
+  <tag k="network"  v="lcn" />
+  <nd ref="10000182"  />
+  <nd ref="10000183"  /> 
+</way>
+
+<way id="10000188">
+  <tag k="route"  v="bicycle" />
+  <tag k="network"  v="rcn" />
+  <nd ref="10000186"  />
+  <nd ref="10000187"  /> 
+</way>
+
+<way id="10000192">
+  <tag k="route"  v="mtb" />
+  <tag k="network"  v="rcn" />
+  <nd ref="10000190"  />
+  <nd ref="10000191"  /> 
+</way>
+
+<way id="10000198">
+  <tag k="name"  v="##LEGEND##" />
+  <tag k="landuse"  v="xxx" />
+  <nd ref="10000194"  />
+  <nd ref="10000195"  /> 
+  <nd ref="10000196"  /> 
+  <nd ref="10000197"  /> 
+  <nd ref="10000194"  /> 
+</way>
+
+</osm>

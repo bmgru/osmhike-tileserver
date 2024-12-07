@@ -1,0 +1,35 @@
+######################################################################################################
+#
+# Dockerfile for building "import" image , using the latest Ubuntu version that still works with phyghtmap
+#
+#  phyghtmap package has been taken from http://katze.tfiu.de/projects/phyghtmap/  and put in scripts directory, from where Dockerfile is executed
+######################################################################################################
+FROM ubuntu:focal
+
+# tell that installs are made in non interactive mode
+ENV DEBIAN_FRONTEND=noninteractive
+
+# tell to use old phyghtmap solution
+ENV USEPHYGHTMAP=yes
+
+# Directory /osmhike is created by volume mapping of the project directory , defined in docker-compose.yml
+WORKDIR /osmhike
+
+# prepare install of phyghtmap 
+# Note that COPY instruction can only take files from the "build context" defined in docker-compose.yml ! 
+RUN mkdir -p /packages
+COPY ./phyghtmap*.deb /packages
+
+RUN apt update && \
+    apt  install --no-install-recommends -y ca-certificates curl gnupg && \
+    apt install --no-install-recommends -y apt-utils python3 osm2pgsql osmctools  postgresql-client wget gdal-bin  && \
+    apt install --no-install-recommends -y python3-lxml /packages/phyghtmap*.deb && \
+    apt clean &&  rm -rf /var/lib/apt/lists/*  # final cleaning to save disk space
+
+USER 1000
+
+# the final executed command will be ENTRYPOINT  CMD
+# but CMD will be replaced by arguments ( if there are some) of "docker-compose run myimage arguments"
+# Note:  we MUST use the array format [ "xxx" , "yyy" ...] otherwise there is the risk that CMD is not taken into account
+ENTRYPOINT [ "sh" , "docker/docker-startup.sh" ]
+CMD  [ "import" ]

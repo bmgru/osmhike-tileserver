@@ -1,0 +1,84 @@
+services:
+
+  #----------- rendering tile server -------------------
+  kosmtik:
+    image: kosmtik
+    container_name: c-kosmtik
+    build:
+      context: ./files/docker
+      dockerfile: Dockerfile.kosmtik
+    volumes:
+      - ./files:/osmhike
+    depends_on:
+      - db
+    ports:
+      - "8888:6789"    # kosmtik standard port 6789 remapped to host port 8888
+    environment:
+      # database connection
+      - PGHOST=db
+      - PGUSER=postgres
+
+  #----------- alternative to kosmtik -------------------
+  tirex:
+    image: tirex
+    container_name: c-tirex
+    build:
+      context: ./files/tirex
+      dockerfile: Dockerfile.tirex
+    volumes:
+      - ./files:/osmhike
+      - ./files/tirex/zlogapache:/var/log/apache2   # facilitate visibility of logs
+      - ./files/tirex/zlogtirex:/var/log/tirex      # facilitate visibility of logs
+    depends_on:
+      - db
+    ports:
+      - "8888:80"    # apache standard port 80 remapped to host port 8888
+    environment:
+      # database connection
+      - PGHOST=db
+      - PGUSER=postgres
+
+  #------------ import data -----------------
+  import:
+    image: import
+    container_name: c-import
+    build:
+      context: ./files/docker
+      dockerfile: Dockerfile.import
+    volumes:
+      - ./files:/osmhike
+    depends_on:
+      - db
+    environment:
+      # database connection
+      - PGHOST=db
+      - PGUSER=postgres
+      # osm2pgsql behavior
+      - OSM2PGSQL_CACHE
+      - OSM2PGSQL_NUMPROC
+      # defines the files to use
+      - AREAOSM       # osm.pbf file
+      - AREAPOLY      # .poly file 
+
+  #--------------- database server ------------------
+  db:
+    image: db
+    container_name: c-db
+    build:
+      context: ./files/docker
+      dockerfile: Dockerfile.db
+    #ports: ( database port not exposed to host )
+    shm_size: 512m
+    volumes:
+      # directory  will be created if does not exist
+      - ./database:/var/lib/postgresql/data
+      - ./files/dbconf:/dbconf
+    environment:
+      # database connection
+      - PGUSER=postgres
+      # database tuning
+      - PG_WORK_MEM
+      - PG_MAINTENANCE_WORK_MEM
+      - PG_SHARED_BUFFERS
+
+

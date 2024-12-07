@@ -1,0 +1,51 @@
+######################################################################################################
+#
+#   DEC2024 : It does not work anymore, due to troubles with nodejs/npm version
+#             "Missing required argument #1 at andLogAndFinish"
+#
+# Dockerfile for building "kosmtik" image , using an old version ubuntu:bionic
+#
+#  Note: it will NOT work with more recent ubuntu versions !
+######################################################################################################
+
+FROM ubuntu:bionic
+
+# tell that installs are made in non interactive mode
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Style dependencies
+RUN apt update && \
+    apt install --no-install-recommends -y   ca-certificates curl gnupg unzip postgresql-client python \
+    fonts-hanazono fonts-noto-cjk fonts-noto-hinted fonts-noto-unhinted  ttf-unifont \
+    mapnik-utils nodejs npm  unzip git && \
+    apt clean && rm -rf /var/lib/apt/lists/*  # final cleaning to save disk space
+
+# Install of Kosmtik 
+# Note: Ubuntu sets npm prefix to /usr/local, which breaks the install of plugins . So we must explicitely force it to /usr
+#       with ubuntu:bionic, the command for doing this is  "npm  set prefix /usr" 
+RUN npm set prefix /usr && npm install -g kosmtik
+
+
+
+WORKDIR /usr/lib/node_modules/kosmtik/
+
+RUN kosmtik plugins --install kosmtik-overpass-layer \
+                    --install kosmtik-fetch-remote \
+                    --install kosmtik-overlay \
+                    --install kosmtik-open-in-josm \
+                    --install kosmtik-map-compare \
+                    --install kosmtik-osm-data-overlay \
+                    --install kosmtik-mapnik-reference \
+                    --install kosmtik-geojson-overlay \
+    && cp /root/.config/kosmtik.yml /tmp/.kosmtik-config.yml
+
+# Directory /osmhike is created by volume mapping , defined in docker-compose.yml
+WORKDIR /osmhike
+
+USER 1000
+
+# the final executed command will be ENTRYPOINT  CMD
+# but CMD will be replaced by arguments ( if there are some) of "docker-compose run myimage arguments"
+# Note:  we MUST use the array format [ "xxx" , "yyy" ...] otherwise there is the risk that CMD is not taken into account
+ENTRYPOINT [ "sh" , "docker/docker-startup.sh" ]
+CMD  [ "kosmtik" ]

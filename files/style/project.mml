@@ -1,0 +1,2354 @@
+name: Osmhike
+description: 'Hiking oriented TileServer based on Cyclosm'
+attribution: Data © OpenStreetMap (and) contributors,  ODbL , Cyclosm , Osmhike
+
+# Left-Lower and Right-Upper  points defining the map bounds
+bounds: &world
+  - -180
+  - -85.05112877980659
+  - 180
+  - 85.05112877980659
+
+# Lon/Lat center  and zoom for the initial map
+center:
+  - 2.5
+  - 40
+  - 4
+
+format: png
+interactivity: false
+
+# available zoom range
+minzoom: 0
+maxzoom: 20
+
+# This is the description of Web-Mercator (used by Openstreetmap) , using the syntax defined by https://proj.org
+srs: "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over"
+
+#------------------------------- Declare blocks that can be reused later in the document -----------------------------------
+_parts:
+
+  # This block is reused by each layer
+  extents: &extents
+    srs-name: "900913"
+    srs: "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over"
+
+  # this block will be used by GPX routes . do NOT use this one for hillshading 
+  extents84: &extents84
+    extent: *world
+    srs-name: "WGS84"
+    srs: "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+
+  # block for standard oms2sql import
+  osm2pgsql: &osm2pgsql
+    type: "postgis"
+    dbname: "osm"
+    key_field: ""
+    geometry_field: "way"
+    extent: "-20037508,-20037508,20037508,20037508"
+
+  # block for specific database for contours
+  osm2pgsqlcontours: &osm2pgsqlcontours
+    type: "postgis"
+    dbname: "contours"
+    key_field: ""
+    geometry_field: "way"
+    extent: "-20037508,-20037508,20037508,20037508"
+
+  ##################################################### allows to swith on/off some groups of layers
+  status_hillshade: &status_hillshade
+    status: on
+
+  status_contours: &status_contours
+    status: on
+
+  status_landuse: &status_landuse
+    status: on
+
+  # roads/track/path
+  status_roadsmedlow: &status_roadsmedlow
+    status: on
+  status_roadshigh: &status_roadshigh
+    status: on
+
+  # towns,villages ...
+  status_places: &status_places
+    status: on
+
+  # labels: area , mountain points
+  status_label: &status_label
+    status: on
+
+  # amenities
+  status_amenities: &status_amenities
+    status: on
+
+  # mountainbike & cycle routes
+  status_cycle3 : &status_cycle3
+    status: on
+
+  # mountain bike info
+  status_mtb3 : &status_mtb3
+    status: on
+
+
+  status_other: &status_other
+    status: on
+
+
+  # not used
+  status_big: &status_big
+    status: off
+
+  status_legend : &status_legend
+    status: on
+
+  # constants
+  status_on : &status_on
+    status: on
+  status_off : &status_off
+    status: off
+
+##################################################
+# List of stylesheets to be used
+##################################################
+Stylesheet:
+- palette.mss
+- road-colors.mss
+- fonts.mss
+- base.mss
+- aerialways.mss
+- ferry-routes.mss
+- roads.mss
+- amenities.mss
+- labels.mss
+- placenames.mss
+- addressing.mss
+- power.mss
+- admin.mss
+- gpx.mss
+- legend.mss
+
+##################################################
+# define the different layers to draw
+##################################################
+Layer:
+
+######################## background made with ocean limits ##########################
+
+# show ocean/land limits : low zoom
+- id: land-low
+  <<: *extents
+  Datasource:
+    file: http://osmdata.openstreetmap.de/download/simplified-land-polygons-complete-3857.zip
+    type: shape
+  class: shp
+  geometry: polygon
+  properties:
+    maxzoom: 9
+    status: on
+
+# show ocean/land limits : high zoom
+- id: land-high
+  <<: *extents
+  Datasource:
+    file: http://osmdata.openstreetmap.de/download/land-polygons-split-3857.zip
+    type: shape
+  class: shp
+  geometry: polygon
+  properties:
+    minzoom: 10
+    status: on
+
+############################ LEGEND must be put HERE , so that other objects can draw over its border #####################
+- id: legend-border
+  class: legend
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          tags->'label' AS label,
+          name
+        FROM planet_osm_polygon
+        WHERE name = '##LEGEND##'
+      ) AS data
+  geometry: polygon
+  properties:
+    <<: *status_legend
+
+- id: legend-labels
+  class: legend
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          tags->'label' AS label,
+          name,
+          ln (  40075*1000 / ( 256* 0.00028  * !scale_denominator!::real   ) ) / ln(2) AS z, -- computed zoom value
+          !pixel_width!::real AS zpixelwidth,  -- size of a pixel in meters  CAUTION: there is high risk that this value is always 0
+          !scale_denominator! AS zscale  -- 1 centimeter on the map is zscale centimeters in real world
+        FROM planet_osm_point
+        WHERE name = '##LEGEND##' 
+      ) AS data
+  geometry: point
+  properties:
+    <<: *status_legend
+
+##################################### landscape ################################
+# landscape usage 
+#  type will contain  a concatenation  like  landuse_forest , natural_wood , leisure_stadium ....
+#
+# landuse_low has been inhibited, to avoid loading a huge amount of objects
+##################################################################################
+
+- id: landuse_low
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT  -- landuse_low
+          ST_Snaptogrid(way, 0.00028  * !scale_denominator!::real / 4) AS way,
+          way_area AS area,
+          COALESCE(
+            CASE WHEN landuse IS NOT NULL THEN ('landuse_' || landuse) ELSE NULL END,
+            CASE WHEN "natural" IS NOT NULL THEN ('natural_' || "natural") ELSE NULL END,
+            CASE WHEN leisure IS NOT NULL THEN ('leisure_' || leisure) ELSE NULL END,
+            CASE WHEN amenity IS NOT NULL THEN ('amenity_' || amenity) ELSE NULL END,
+            CASE WHEN highway IN ('pedestrian') THEN ('highway_' || highway) ELSE NULL END
+          ) AS type,
+          sport
+          FROM planet_osm_polygon
+          WHERE (
+            landuse IN ('cemetery', 'commercial', 'forest', 'grass', 'industrial', 'meadow', 'farmland', 'vineyard', 'orchard', 'religious', 'residential', 'retail', 'village_green')
+            OR "natural" IN ('grassland', 'glacier', 'heath', 'scrub', 'wood', 'wetland', 'sand', 'beach', 'dune', 'bare_rock', 'shingle', 'scree')
+            OR leisure IN ('common', 'golf_course', 'garden', 'park', 'pitch', 'sports_centre', 'stadium', 'track')
+            OR amenity IN ('college', 'hospital', 'parking', 'school', 'university')
+            OR highway IN ('pedestrian')
+          )
+          AND way_area > 1*0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real
+          AND way && !bbox! -- without this, risk of shared memeory error   
+          ORDER BY way_area DESC
+      ) AS data
+  geometry: polygon
+  properties:
+    minzoom: 3
+    maxzoom: 9
+    <<: *status_off
+
+# landscape usage ( medium zooms )
+#  type will contain  a concatenation  like  landuse_forest , natural_wood , leisure_stadium ....
+#  show only items > 4 pixels
+- id: landuse_med
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT  -- landuse_med
+          way,
+          way_area AS area,
+          COALESCE(
+            CASE WHEN landuse IS NOT NULL THEN ('landuse_' || landuse) ELSE NULL END,
+            CASE WHEN "natural" IS NOT NULL THEN ('natural_' || "natural") ELSE NULL END,
+            CASE WHEN leisure IS NOT NULL THEN ('leisure_' || leisure) ELSE NULL END,
+            CASE WHEN amenity IS NOT NULL THEN ('amenity' || amenity) ELSE NULL END,
+            CASE WHEN highway IS NOT NULL THEN ('highway_' || highway) ELSE NULL END
+          ) AS type,
+          sport
+        FROM planet_osm_polygon
+        WHERE (
+          landuse IN ('allotments', 'brownfield', 'cemetery', 'commercial', 'construction', 'forest', 'grass', 'greenhouse_horticulture', 'industrial', 'landfill', 'meadow', 'farmland', 'vineyard', 'orchard', 'plant_nursery', 'quarry', 'religious', 'residential', 'retail', 'village_green')
+          OR "natural" IN ('grassland', 'glacier', 'heath', 'scrub', 'wood', 'wetland', 'sand', 'beach', 'dune', 'bare_rock', 'shingle', 'scree')
+          OR leisure IN ('common', 'golf_course', 'garden', 'park', 'pitch', 'sports_centre', 'stadium', 'track')
+          OR amenity IN ('college', 'grave_yard', 'hospital', 'parking', 'school', 'university')
+          OR highway IN ('pedestrian')
+        )
+        AND way_area >= 4 *0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real
+        ORDER BY way_area DESC
+      ) AS data
+  geometry: polygon
+  properties:
+    cache-features: true
+    minzoom: 10
+    maxzoom: 12
+    <<: *status_landuse
+
+# landscape usage ( high zooms )
+#  type will contain  a concatenation  like  landuse_forest , natural_wood , leisure_stadium ....
+- id: landuse_high
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          way_area AS area,
+          COALESCE(
+            CASE WHEN landuse IS NOT NULL THEN ('landuse_' || landuse) ELSE NULL END,
+            CASE WHEN leisure IS NOT NULL THEN ('leisure_' || leisure) ELSE NULL END,
+            CASE WHEN "natural" IS NOT NULL THEN ('natural_' || "natural") ELSE NULL END,
+            CASE WHEN highway IS NOT NULL THEN ('highway_' || highway) ELSE NULL END,
+            CASE WHEN amenity IS NOT NULL THEN ('amenity_' || amenity) ELSE NULL END,
+            CASE WHEN man_made IN ('works', 'wastewater_plant', 'water_works') THEN 'landuse_industrial' ELSE NULL END
+          ) AS type,
+          sport
+        FROM planet_osm_polygon
+        WHERE landuse IN ('allotments', 'brownfield', 'cemetery', 'commercial', 'construction', 'forest', 'grass', 'greenhouse_horticulture', 'industrial', 'landfill', 'meadow', 'farmland', 'vineyard', 'orchard', 'plant_nursery', 'quarry', 'religious', 'residential', 'retail', 'village_green')
+          OR leisure IN ('common', 'garden', 'golf_course', 'park', 'pitch', 'sports_centre', 'stadium', 'track')
+          OR "natural" IN ('grassland', 'glacier', 'heath', 'scrub', 'wood', 'wetland', 'sand', 'beach', 'dune', 'bare_rock', 'shingle', 'scree')
+          OR highway IN ('pedestrian', 'footway')
+          OR amenity IN ('college', 'grave_yard', 'hospital', 'parking', 'school', 'university')
+          OR man_made IN ('works', 'wastewater_plant', 'water_works')
+        ORDER BY way_area DESC
+      ) AS data
+  geometry: polygon
+  properties:
+    minzoom: 13
+    <<: *status_landuse
+
+# used to draw leaf type for forests (landuse=forest or natural=wood )
+#  type is forced to 'wood'
+- id: landuse-overlay
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          COALESCE(CASE WHEN landuse = 'forest' THEN 'wood' ELSE NULL END, "natural", landuse) AS type,
+          tags->'leaf_type' AS leaf_type,
+          way_area/NULLIF(0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real,0) AS way_pixels 
+        FROM planet_osm_polygon
+        WHERE
+          ("natural" = 'wood' OR landuse = 'forest')
+          AND building IS NULL
+          AND way_area > 1*0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real
+        ORDER BY way_area DESC
+      ) AS data
+  geometry: polygon
+  properties:
+    minzoom: 7
+    <<: *status_landuse
+
+############################ hillshade ################################
+- id: hillshade-low
+  <<: *extents
+  Datasource:
+    type: gdal
+    file: ../demdata/hillshade-500.tif
+    format: tiff
+  geometry: raster
+  properties:
+    minzoom: 4
+    maxzoom: 9
+    <<: *status_hillshade
+
+- id: hillshade-high
+  <<: *extents
+  Datasource:
+    type: gdal
+    file: ../demdata/hillshade-30.tif
+    format: tiff
+  geometry: raster
+  properties:
+    minzoom: 10
+    <<: *status_hillshade
+
+################################## contours lines ##############################
+- id: contours100
+  class: contours
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsqlcontours
+    table: |-
+      (
+        SELECT
+          way, ele
+        FROM planet_osm_line
+        WHERE elegroup = 100
+      ) AS data
+  geometry: line
+  properties:
+    minzoom: 13
+    <<: *status_contours
+
+- id: contours50
+  class: contours
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsqlcontours
+    table: |-
+      (
+        SELECT
+          way, ele 
+        FROM planet_osm_line
+        WHERE elegroup = 50
+      ) AS data
+  geometry: line
+  properties:
+    minzoom: 14
+    <<: *status_contours
+
+- id: contours20
+  class: contours
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsqlcontours
+    table: |-
+      (
+        SELECT
+          way, ele 
+        FROM planet_osm_line
+        WHERE elegroup=20
+      ) AS data
+  geometry: line
+  properties:
+    minzoom: 12
+    status: off
+
+- id: contours10
+  class: contours
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsqlcontours
+    table: |-
+      (
+        SELECT
+          way, ele 
+        FROM planet_osm_line
+        WHERE elegroup = 20 OR elegroup=10 
+      ) AS data
+  geometry: line
+  properties:
+    minzoom: 15
+    <<: *status_contours
+
+######################## waterway: river,canal .... ####################################
+- id: waterway_low
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT ST_Snaptogrid(way, 0.00028  * !scale_denominator!::real / 4) AS way, waterway AS type
+        FROM planet_osm_line
+        WHERE
+          waterway IN ('river', 'canal')
+          AND (tunnel IS NULL OR tunnel NOT IN ('yes', 'culvert'))
+          AND way && !bbox!
+      ) AS data
+  geometry: linestring
+  properties:
+    minzoom: 8
+    maxzoom: 12
+    <<: *status_other
+
+- id: waterway_med
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT way, waterway AS type
+        FROM planet_osm_line
+        WHERE
+          waterway IN ('river', 'canal', 'stream')
+          AND (tunnel IS NULL OR tunnel NOT IN ('yes', 'culvert'))
+      ) AS data
+  geometry: linestring
+  properties:
+    minzoom: 13
+    maxzoom: 14
+    <<: *status_other
+
+- id: waterway_high
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT way, waterway AS type
+        FROM planet_osm_line
+        WHERE
+          waterway IN ('river', 'canal', 'stream', 'ditch', 'drain')
+          AND (tunnel IS NULL OR tunnel NOT IN ('yes', 'culvert'))
+      ) AS data
+  geometry: linestring
+  properties:
+    minzoom: 15
+    <<: *status_other
+
+######################### water : lake, pond .... ###################################
+- id: water_low
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT  --water_low
+          way,
+          way_area AS area,
+          CASE
+            WHEN tags->'intermittent' IN ('yes') OR tags->'seasonal' IN ('yes', 'spring', 'summer', 'autumn', 'winter', 'wet_season', 'dry_season') OR tags->'basin' IN ('detention', 'infiltration') THEN 'yes'
+            ELSE 'no'
+          END AS intermittent
+        FROM planet_osm_polygon
+        WHERE
+          (
+            "natural" IN ('water', 'pond')
+            OR waterway IN ('basin', 'canal', 'dock', 'mill_pond', 'pond', 'riverbank', 'stream')
+            OR landuse in ('basin', 'reservoir')
+          )
+          AND way_area > 1*0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real
+          AND (tunnel IS NULL OR tunnel NOT IN ('yes', 'culvert'))
+      ) AS data
+  geometry: polygon
+  properties:
+    minzoom: 5
+    maxzoom: 9
+    <<: *status_other
+
+- id: water_med
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT  --water_med
+          way,
+          way_area AS area,
+          CASE
+            WHEN tags->'intermittent' IN ('yes') OR tags->'seasonal' IN ('yes', 'spring', 'summer', 'autumn', 'winter', 'wet_season', 'dry_season') OR tags->'basin' IN ('detention', 'infiltration') THEN 'yes'
+            ELSE 'no'
+          END AS intermittent
+        FROM planet_osm_polygon
+        WHERE
+          (
+            "natural" IN ('water', 'pond')
+            OR waterway IN ('basin', 'canal', 'dock', 'mill_pond', 'pond', 'riverbank', 'stream')
+            OR landuse in ('basin', 'reservoir')
+          )
+          AND way_area > 1*0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real
+          AND (tunnel IS NULL OR tunnel NOT IN ('yes', 'culvert'))
+      ) AS data
+  geometry: polygon
+  properties:
+    minzoom: 10
+    maxzoom: 12
+    <<: *status_other
+
+- id: water_high
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT  --water_high
+            way,
+            way_area AS area,
+            CASE
+            WHEN tags->'intermittent' IN ('yes') OR tags->'seasonal' IN ('yes', 'spring', 'summer', 'autumn', 'winter', 'wet_season', 'dry_season') OR tags->'basin' IN ('detention', 'infiltration') THEN 'yes'
+              ELSE 'no'
+            END AS intermittent
+        FROM planet_osm_polygon
+        WHERE
+          (
+            "natural" IN ('water', 'pond')
+            OR waterway IN ('basin', 'canal', 'dock', 'mill_pond', 'pond', 'riverbank', 'stream')
+            OR landuse in ('basin', 'reservoir')
+          )
+          AND (tunnel IS NULL OR tunnel NOT IN ('yes', 'culvert'))
+      ) AS data
+  geometry: polygon
+  properties:
+    minzoom: 13
+    <<: *status_other
+
+########################### human artifacts ############################
+- id: buildings
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          building AS type,
+          waterway
+        FROM planet_osm_polygon
+        WHERE ((building IS NOT NULL AND building != 'no')
+            OR (man_made='bridge')
+            OR (waterway='dam'))
+          AND way_area > 1*0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real
+          AND (tags->'location' IS NULL OR tags->'location' != 'underground')
+        ORDER BY z_order ASC, way_area DESC
+      ) AS data
+  geometry: polygon
+  properties:
+    minzoom: 16
+    <<: *status_other
+
+- id: piers-poly
+  geometry: polygon
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way, man_made
+        FROM planet_osm_polygon
+        WHERE man_made IN ('pier', 'breakwater', 'groyne')
+      ) AS piers_poly
+  properties:
+    minzoom: 12
+    <<: *status_other
+
+- id: piers-line
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way, man_made
+        FROM planet_osm_line
+        WHERE man_made IN ('pier', 'breakwater', 'groyne')
+      ) AS piers_line
+  properties:
+    minzoom: 12
+    <<: *status_other
+
+- id: aeroway
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT way, aeroway AS type
+        FROM planet_osm_line
+        WHERE aeroway IN ('runway', 'taxiway')
+      ) AS data
+  geometry: linestring
+  properties:
+    minzoom: 11
+    <<: *status_other
+
+############################################# tunnel , bridge , road , track/path ######################
+- id: tunnel
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+            way,
+            type,
+            alpine,
+            access,
+            maxspeed_kmh,
+            bicycle,
+            motor_vehicle,
+            cyclestreet,
+            oneway,
+            cycleway_left_render,
+            cycleway_right_render,
+            cycleway_left_oneway,
+            cycleway_right_oneway,
+            can_bicycle,
+            segregated,
+            oneway_bicycle,
+            has_ramp,
+            surface_type,
+            service,
+            mtb_scale,
+            mtb_scale_imba,
+            tunnel
+        FROM cyclosm_ways
+        WHERE tunnel NOT IN ('no')
+      ) AS data
+  geometry: linestring
+  properties:
+    cache-features: true
+    minzoom: 11
+    <<: *status_other
+
+- id: turning_circle_case
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT way
+        FROM planet_osm_point
+        WHERE highway = 'turning_circle'
+      ) AS data
+  geometry: point
+  properties:
+    minzoom: 14
+    <<: *status_other
+
+- id: leisure_track
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          sport
+        FROM planet_osm_line
+        WHERE leisure = 'track'
+      ) AS data
+  geometry: linestring
+  properties:
+    cache-features: true
+    minzoom: 11
+    <<: *status_other
+
+- id: roads_low
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+          SELECT
+            ST_Snaptogrid(way, 0.00028  * !scale_denominator!::real / 4) AS way,
+            COALESCE(
+              highway,
+              CASE
+                WHEN railway IN ('rail') THEN 'railway'
+                ELSE 'other'
+              END
+            ) AS type,
+            bridge,
+            tunnel,
+            bicycle
+          FROM planet_osm_roads
+          WHERE ((railway IN ('rail') AND (service IS NULL OR service NOT IN ('spur', 'siding', 'yard')))
+              OR highway IN ('motorway', 'trunk'))
+            AND way && !bbox!
+          ORDER BY CASE
+            WHEN railway IS NOT NULL THEN 0
+            WHEN highway IS NOT NULL THEN 1
+          END DESC
+      ) AS data
+  geometry: linestring
+  properties:
+    cache-features: true
+    minzoom: 7
+    maxzoom: 8
+    <<: *status_roadsmedlow
+
+- id: roads_med
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          ST_Snaptogrid(way, 0.00028  * !scale_denominator!::real / 4) AS way,
+          COALESCE(
+            highway,
+            CASE
+              WHEN railway IN ('rail') THEN 'railway'
+              ELSE 'other'
+            END
+          ) AS type,
+          CASE
+            WHEN bicycle IN ('no', 'private', 'use_sidepath') THEN 'no'
+            WHEN bicycle IS NOT NULL THEN bicycle
+            WHEN tags->'motorroad' IN ('yes') THEN 'no'
+            WHEN highway NOT IN ('motorway', 'motorway_link') AND tags->'vehicle' IN ('no', 'private') THEN 'no'
+            WHEN highway NOT IN ('motorway', 'motorway_link') AND tags->'vehicle' IS NOT NULL THEN tags->'vehicle'
+            WHEN highway NOT IN ('motorway', 'motorway_link') AND access IN ('no', 'private') THEN 'no'
+            WHEN highway NOT IN ('motorway', 'motorway_link') AND access IS NOT NULL THEN access
+            ELSE NULL
+          END AS can_bicycle
+        FROM planet_osm_roads
+        WHERE (((railway IN ('rail') AND (service IS NULL OR service NOT IN ('spur', 'siding', 'yard')))
+            OR highway IN ('motorway', 'trunk', 'primary' )))
+          AND way && !bbox!
+        ORDER BY CASE
+          WHEN railway IS NOT NULL THEN 0
+          WHEN highway IS NOT NULL THEN 1
+        END DESC
+      ) AS data
+  geometry: linestring
+  properties:
+    minzoom: 9
+    maxzoom: 10
+    <<: *status_roadsmedlow
+
+
+- id: roads_high
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+            way,
+            type,
+            alpine,
+            access,
+            maxspeed_kmh,
+            bicycle,
+            motor_vehicle,
+            cyclestreet,
+            oneway,
+            cycleway_left_render,
+            cycleway_right_render,
+            cycleway_left_oneway,
+            cycleway_right_oneway,
+            can_bicycle,
+            segregated,
+            oneway_bicycle,
+            has_ramp,
+            surface_type,
+            service,
+            mtb_scale,
+            mtb_scale_imba,
+            ROUND (!scale_denominator!::real) as zscale   -- get  the current scale 
+        FROM cyclosm_ways
+        WHERE (tunnel IS NULL OR tunnel = 'no')
+          AND (bridge IS NULL OR bridge = 'no')
+          -- eliminate track if AND zoom < 13 ( scale=68000 )
+          -- eliminate path  if AND zoom < 14 ( scale=34000 )
+          AND NOT (  type='track' AND ROUND (!scale_denominator!::real)  > 80000   OR type='path' AND ROUND (!scale_denominator!::real)  > 40000 )
+      ) AS data
+  geometry: linestring
+  properties:
+    cache-features: true
+    minzoom: 11
+    <<: *status_roadshigh
+
+
+
+
+- id: turning_circle_fill
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT way
+        FROM planet_osm_point
+        WHERE highway = 'turning_circle'
+      ) AS data
+  geometry: point
+  properties:
+    minzoom: 14
+    <<: *status_other
+
+- id: aerialways
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          aerialway,
+          name,
+          CASE
+            WHEN tags->'aerialway:bicycle' IN ('yes', 'summer') THEN 'yes'
+            WHEN aerialway IN ('cablecar', 'gondola', 'mixed_lift') AND (tags->'aerialway:bicycle' IS NULL OR tags->'aerialway:bicycle' != 'no') THEN 'yes'
+            ELSE 'no'
+          END AS bicycle
+        FROM planet_osm_line
+        WHERE aerialway IS NOT NULL
+      ) AS data
+  properties:
+    minzoom: 12
+    <<: *status_other
+
+- id: bridge
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+            way,
+            type,
+            alpine,
+            access,
+            maxspeed_kmh,
+            bicycle,
+            motor_vehicle,
+            cyclestreet,
+            oneway,
+            cycleway_left_render,
+            cycleway_right_render,
+            cycleway_left_oneway,
+            cycleway_right_oneway,
+            can_bicycle,
+            segregated,
+            oneway_bicycle,
+            has_ramp,
+            surface_type,
+            service,
+            mtb_scale,
+            mtb_scale_imba,
+            bridge
+        FROM cyclosm_ways
+        WHERE bridge NOT IN ('no')
+      ) AS data
+  geometry: linestring
+  properties:
+    cache-features: true
+    minzoom: 11
+    <<: *status_other
+
+############################### administrative boundaries #####################
+- id: admin-low
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way,
+          admin_level
+        FROM planet_osm_roads
+        WHERE boundary = 'administrative'
+          AND admin_level IN ('0', '1', '2' ) -- eliminate   , '3', '4')
+          AND osm_id < 0
+        ORDER BY admin_level DESC
+      ) AS admin_low_zoom
+  properties:
+    minzoom: 4
+    maxzoom: 10
+    <<: *status_other
+
+- id: admin-mid
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way,
+          admin_level
+        FROM planet_osm_roads
+        WHERE boundary = 'administrative'
+          AND admin_level IN ('0', '1', '2')  -- eliminate   , '3', '4', '5', '6', '7', '8'
+          AND osm_id < 0
+        ORDER BY admin_level DESC
+      ) AS admin_mid_zoom
+  properties:
+    minzoom: 11
+    maxzoom: 12
+    <<: *status_other
+
+- id: admin-high
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way,
+          admin_level
+        FROM planet_osm_roads
+        WHERE boundary = 'administrative'
+          AND admin_level IN ('0', '1', '2')  --  suppress , '3', '4', '5', '6', '7', '8', '9' 
+          AND osm_id < 0
+        ORDER BY admin_level::integer DESC -- With 10 as a valid value, we need to do a numeric ordering, not a text ordering
+      ) AS admin_high_zoom
+  properties:
+    minzoom: 13
+    <<: *status_other
+
+######################### routes #################################
+- id: ferry-routes
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way,
+          bicycle
+        FROM planet_osm_line
+        WHERE route = 'ferry'
+          AND osm_id > 0
+      ) AS ferry_routes
+  properties:
+    minzoom: 8
+    <<: *status_other
+
+- id: bicycle_routes_gen0
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT ST_Simplify(way, 0.00028  * !scale_denominator!::real/4, TRUE) AS way, route, tags->'network' AS type, tags->'state' AS state
+        FROM planet_osm_line
+        WHERE (route='bicycle' OR route='mtb')
+          AND tags->'network'='icn'
+          AND way && !bbox!
+        ORDER BY z_order
+      ) AS data
+  geometry: linestring
+  properties:
+    minzoom: 2
+    maxzoom: 4
+    status: off   # skipped
+
+- id: bicycle_routes_gen1
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT ST_Simplify(way, 0.00028  * !scale_denominator!::real/4, TRUE) AS way, route, tags->'network' AS type, tags->'state' AS state
+        FROM planet_osm_line
+        WHERE (route='bicycle' OR route='mtb')
+          AND tags->'network' IN ('icn', 'ncn')
+          AND way && !bbox!
+        ORDER BY CASE
+          WHEN tags->'network' = 'icn' THEN 0
+          WHEN tags->'network' = 'ncn' THEN 1
+        END DESC
+      ) AS data
+  geometry: linestring
+  properties:
+    minzoom: 5
+    maxzoom: 7
+    status: off   # skipped
+
+- id: bicycle_routes_gen2
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT ST_Simplify(way, 0.00028  * !scale_denominator!::real/4, TRUE) AS way, route, tags->'network' AS type, tags->'state' AS state
+        FROM planet_osm_line
+        WHERE (route='bicycle' OR route='mtb')
+          AND tags->'network' IN ('icn', 'ncn', 'rcn')
+          AND (NOT ((tags->'network') IS NOT NULL AND (tags->'network:type') IS NOT NULL AND (tags->'network' = 'rcn') AND tags->'network:type' = 'node_network'))
+          AND way && !bbox!
+        ORDER BY CASE
+          WHEN tags->'network' = 'icn' THEN 0
+          WHEN tags->'network' = 'ncn' THEN 1
+          WHEN tags->'network' = 'rcn' THEN 2
+        END DESC
+      ) AS data
+  geometry: linestring
+  properties:
+    minzoom: 8
+    maxzoom: 10
+    status: off   # skipped
+
+- id: bicycle_routes_bicycle_gen3
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT * FROM (
+          SELECT
+            way,
+            COALESCE(tags->'network', 'lcn') AS type,
+            tags->'state' AS state,
+            CASE
+              WHEN tags->'network' = 'icn' THEN 0
+              WHEN tags->'network' = 'ncn' THEN 1
+              WHEN tags->'network' = 'rcn' THEN 2
+              WHEN tags->'network' = 'lcn' THEN 3
+              ELSE 4
+            END as priority
+          FROM planet_osm_line
+          WHERE route='bicycle'
+          UNION ALL
+          SELECT way, 'lcn' as type, tags->'lcn' AS state, 4 as priority
+          FROM planet_osm_line
+          WHERE tags->'lcn' IS NOT NULL AND tags->'lcn' NOT IN ('no', 'none')
+            AND highway IS NOT NULL
+        ) as routes_from_relations_and_ways
+        ORDER BY priority DESC
+      ) AS data
+  geometry: linestring
+  properties:
+    minzoom: 11
+    <<: *status_cycle3
+
+- id: bicycle_routes_mtb_gen3
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT way, route, COALESCE(tags->'network', 'lcn') AS type, tags->'state' AS state
+        FROM planet_osm_line
+        WHERE route='mtb'
+        ORDER BY CASE
+          WHEN tags->'network' = 'icn' THEN 0
+          WHEN tags->'network' = 'ncn' THEN 1
+          WHEN tags->'network' = 'rcn' THEN 2
+          WHEN tags->'network' = 'lcn' THEN 3
+          ELSE 4
+        END DESC
+      ) AS data
+  geometry: linestring
+  properties:
+    minzoom: 13
+    <<: *status_mtb3
+
+############################### gpx route #######################
+- id: route
+  <<: *extents84
+  Datasource:
+    file: '${gpxroute}'
+    type: ogr
+    layer: tracks
+  geometry: line
+  properties:
+    status: off
+
+############################### power line ######################
+- id: power-minorline
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way
+        FROM planet_osm_line
+        WHERE power = 'minor_line'
+      ) AS power_minorline
+  properties:
+    minzoom: 16
+    <<: *status_other
+
+- id: power-line
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way
+        FROM planet_osm_line
+        WHERE power = 'line'
+          OR (power = 'cable' AND tags->'location' IN ('overground', 'overhead', 'surface', 'outdoor', 'platform'))
+      ) AS power_line
+  properties:
+    minzoom: 14
+    <<: *status_other
+
+################################### other stuff ###########################
+- id: protected-areas
+  geometry: polygon
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way,
+          name,
+          boundary,
+          tags->'protect_class' AS protect_class,
+          way_area/NULLIF(0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real,0) AS way_pixels  ---- way_area/NULLIF(POW(!scale_denominator!*0.001*0.28,2),0) AS way_pixels
+        FROM planet_osm_polygon
+        WHERE (boundary IN ('aboriginal_lands', 'national_park')
+                OR leisure = 'nature_reserve'
+                OR (boundary = 'protected_area' AND tags->'protect_class' IN ('1','1a','1b','2','3','4','5','6','7','24','97','98','99')))
+          AND building IS NULL
+          AND way_area > 1*0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real
+      ) AS protected_areas
+  properties:
+    cache-features: true
+    minzoom: 11
+    <<: *status_other
+
+- id: trees
+  geometry: polygon
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way,
+          "natural"
+        FROM planet_osm_point
+        WHERE "natural" = 'tree'
+        UNION ALL
+        SELECT
+          way,
+          "natural"
+        FROM planet_osm_line
+        WHERE "natural" = 'tree_row'
+      ) AS data
+  properties:
+    cache-features: true
+    minzoom: 16
+    <<: *status_other
+
+- id: barriers_line
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way, COALESCE(historic, barrier) AS feature
+        FROM
+          (SELECT way,
+            ('barrier_' || (CASE WHEN barrier IN ('chain', 'city_wall', 'ditch', 'fence', 'guard_rail',
+                  'handrail', 'hedge', 'jersey_barrier', 'retaining_wall', 'wall') THEN barrier ELSE NULL END)) AS barrier,
+            ('historic_' || (CASE WHEN historic = 'citywalls' THEN historic ELSE NULL END)) AS historic
+            FROM
+              (SELECT
+                  way,
+                  historic,
+                  barrier,
+                  waterway
+                FROM planet_osm_polygon
+                WHERE way && !bbox!
+              UNION ALL
+              SELECT
+                  way,
+                  historic,
+                  barrier,
+                  waterway
+                FROM planet_osm_line
+                WHERE way && !bbox!
+              ) _
+            WHERE barrier IN ('chain', 'city_wall', 'ditch', 'fence', 'guard_rail',
+                'handrail', 'hedge', 'jersey_barrier', 'retaining_wall', 'wall')
+            OR historic = 'citywalls'
+            AND (waterway IS NULL OR waterway NOT IN ('river', 'canal', 'stream', 'drain', 'ditch'))
+        ) AS features
+      ) AS line_barriers
+  properties:
+    minzoom: 15
+    <<: *status_other
+
+- id: cycle-junction-nodes
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          RIGHT(
+            COALESCE(tags->'icn_ref', tags->'ncn_ref', tags->'rcn_ref', tags->'lcn_ref'),
+            4
+          ) AS ref,
+          CASE
+            WHEN (tags->'icn_ref') IS NOT NULL THEN 'icn'
+            WHEN (tags->'ncn_ref') IS NOT NULL THEN 'ncn'
+            WHEN (tags->'rcn_ref') IS NOT NULL THEN 'rcn'
+            WHEN (tags->'lcn_ref') IS NOT NULL THEN 'lcn'
+          END AS network
+        FROM planet_osm_point
+        WHERE
+          (tags->'icn_ref') IS NOT NULL OR
+          (tags->'ncn_ref') IS NOT NULL OR
+          (tags->'rcn_ref') IS NOT NULL OR
+          (tags->'lcn_ref') IS NOT NULL
+        ORDER BY z_order NULLS LAST
+      ) AS data
+  geometry: point
+  properties:
+    minzoom: 13
+    <<: *status_other
+
+- id: cliffs
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT way, "natural", man_made
+        FROM planet_osm_line
+        WHERE "natural" = 'cliff' OR man_made = 'embankment'
+      ) AS data
+  geometry: linestring
+  properties:
+    cache-features: true
+    minzoom: 13
+    <<: *status_other
+
+########################################### placenames ################################
+
+- id: capital-names
+  geometry: point
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way,
+          name,
+          CASE
+            WHEN (population ~ '^[0-9]{1,8}$') THEN population::INTEGER ELSE 0
+          END as population,
+          round(ascii(md5(osm_id::text)) / 55) AS dir -- base direction factor on geometry to be consistent across metatiles
+        FROM planet_osm_point
+        WHERE place IN ('city', 'town', 'village', 'hamlet')
+          AND name IS NOT NULL
+          AND capital='yes'
+        ORDER BY population DESC
+      ) AS data
+  properties:
+    minzoom: 5
+    maxzoom: 15
+    <<: *status_on
+
+# It is important to draw state name after capital name, because: 
+#   If the capital is in the middle of the state, then the capital text would overlap the state text, 
+#   and so would be suppressed
+# Using text-placements/text-dx/text-dy  allows to position state text at a free place
+- id: country-names
+  class: country
+  geometry: point
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way,
+          way_area/NULLIF(0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real,0) AS way_pixels,
+          name
+        FROM planet_osm_polygon
+        WHERE boundary = 'administrative'
+          AND admin_level = '2'
+          AND name IS NOT NULL
+          AND way_area > 100*0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real
+        ORDER BY way_area DESC
+      ) AS data
+  properties:
+    minzoom: 4
+    maxzoom: 14
+    <<: *status_on
+
+# disabled ! It prevents big towns from being shown correctly
+# For France, zoom=6 in openstreetmap , causes Lyon to be replaced by Villeurbanne ! (probably because Lyon overlapps with the regional name)
+- id: state-names
+  class: state
+  geometry: point
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way,
+          way_area/NULLIF(0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real,0) AS way_pixels,
+          name,
+          ref
+        FROM planet_osm_polygon
+        WHERE boundary = 'administrative'
+          AND admin_level = '4'
+          AND name IS NOT NULL
+          AND way_area > 100*0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real
+        ORDER BY way_area DESC
+      ) AS data
+  properties:
+    minzoom: 6
+    maxzoom: 10
+    <<: *status_off
+
+# for low zoom, show only CITY to avoid a huge data extraction , for medium zoom show CITY TOWN , 
+- id: placenames-medium
+  geometry: point
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way,
+          CONCAT ( ' ' , name, ' ' ) AS name,   -- adding blanks seems to avoid troubles when text reaches tile boundaries
+          score,
+          CASE
+            WHEN (place = 'city') THEN 1
+            ELSE 2
+          END as category,
+          round(ascii(md5(osm_id::text)) / 55) AS dir -- base direction factor on geometry to be consistent across metatiles
+        FROM
+          (SELECT
+              osm_id,
+              way,
+              place,
+              name,
+              (
+                (CASE
+                  WHEN (population ~ '^[0-9]{1,8}$') THEN population::INTEGER
+                  WHEN (place = 'city') THEN 100000
+                  WHEN (place = 'town') THEN 1000
+                  ELSE 1
+                END)
+                *
+                (CASE
+                  WHEN (capital='4') THEN 2
+                  ELSE 1
+                END)
+              ) AS score
+            FROM planet_osm_point
+            WHERE 
+                    -- zoom <=8  show only CITY   ,  zoom > 8 show CITY,TOWN
+                    (
+                    place IN ('city')  
+                    OR 
+                    place IN ('city', 'town')  AND  ROUND(   log( 2 , 559082264 / !scale_denominator!)     ) >8  
+                    ) 
+              AND name IS NOT NULL
+              AND NOT (capital IS NOT NULL AND capital='yes')
+          ) as p
+        ORDER BY score DESC, length(name) DESC, name
+      ) AS data
+  properties:
+    cache-features: true
+    minzoom: 6
+    maxzoom: 16
+    <<: *status_places
+
+
+
+- id: placenames-small
+  geometry: point
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT *, ROW_NUMBER() OVER () AS row_number
+        FROM (
+          SELECT
+
+            way,
+            place,
+            leisure,
+            CONCAT ( name) AS name,   -- adding blanks seems to avoid troubles when text reaches tile boundaries
+            CASE
+              WHEN (population ~ '^[0-9]{1,8}$') THEN population::INTEGER ELSE 0
+            END as population
+          FROM planet_osm_point
+          WHERE way && !bbox! AND (
+            place IN ('village', 'hamlet')
+            AND name IS NOT NULL
+            AND NOT (capital IS NOT NULL AND capital='yes')
+            OR (place IN ('suburb', 'quarter', 'neighbourhood', 'locality', 'isolated_dwelling', 'farm')
+                OR (place IN ('square')
+                    AND (leisure is NULL OR NOT leisure IN ('park', 'common', 'recreation_ground', 'garden')))
+            ) AND name IS NOT NULL
+          )
+          ORDER BY
+            population DESC,
+            CASE
+              WHEN place = 'suburb' THEN 3
+              WHEN place = 'village' THEN 4
+              WHEN place = 'hamlet' THEN 5
+              WHEN place = 'quarter' THEN 6
+              WHEN place = 'neighbourhood' THEN 7
+              WHEN place = 'locality' THEN 8
+              WHEN place = 'isolated_dwelling' THEN 9
+              WHEN place = 'farm' THEN 10
+              WHEN place = 'square' THEN 11
+            END ASC,
+            length(name) DESC,
+            name
+        ) AS data2
+      ) AS data
+  properties:
+    cache-features: true
+    minzoom: 11
+    <<: *status_places
+
+- id: ferry-routes-text
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way,
+          name
+        FROM planet_osm_line
+        WHERE route = 'ferry'
+          AND osm_id > 0
+          AND name IS NOT NULL
+      ) AS ferry_routes_text
+  properties:
+    minzoom: 13
+    <<: *status_other
+
+
+
+- id: admin-text
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way,
+          name,
+          admin_level,
+          way_area/NULLIF(POW(!scale_denominator!*0.001*0.28,2),0) AS way_pixels
+        FROM planet_osm_polygon
+        WHERE boundary = 'administrative'
+          AND admin_level IN ('1', '2', '3', '4', '5', '6', '7', '8', '9')
+          AND name IS NOT NULL
+          AND osm_id < 0
+        ORDER BY admin_level::integer ASC, way_area DESC
+      ) AS admin_text
+  properties:
+    minzoom: 13
+    status: off 
+    <<: *status_other
+
+- id: protected-areas-text
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way,
+          name,
+          boundary,
+          tags->'protect_class' AS protect_class,
+          way_area/NULLIF(POW(!scale_denominator!*0.001*0.28,2),0) AS way_pixels
+        FROM planet_osm_polygon
+        WHERE (boundary IN ('aboriginal_lands', 'national_park')
+               OR leisure = 'nature_reserve'
+               OR (boundary = 'protected_area' AND tags->'protect_class' IN ('1','1a','1b','2','3','4','5','6','7','24','97','98','99')))
+          AND name IS NOT NULL
+      ) AS protected_areas_text
+  properties:
+    minzoom: 13
+    <<: *status_other
+
+# printing the bicycle routes labels (ref,name ) has been limited to zoom>=11, since the same has been done for coloring roads 
+- id: bicycle_routes_labels
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT way, route, tags->'network' AS type, ref, name, 1 as height, char_length(ref) AS width
+        FROM planet_osm_line
+        WHERE (route = 'bicycle' OR route = 'mtb')
+          AND (ref IS NOT NULL OR name IS NOT NULL)
+          AND (NOT ((tags->'network') IS NOT NULL AND (tags->'network:type') IS NOT NULL AND (tags->'network' = 'rcn') AND tags->'network:type' = 'node_network'))
+      ) AS data
+  geometry: linestring
+  properties:
+    minzoom: 11
+    <<: *status_other
+
+- id: train_stations
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          type,
+          name,
+          station,
+          way_area
+        FROM
+        (
+          SELECT
+            ST_PointOnSurface(way) AS way,
+            name,
+            railway AS type,
+            tags->'station' AS station,
+            way_area
+          FROM planet_osm_polygon
+          WHERE way && !bbox! -- Not ST_PointOnSurface(way) because name might be NULL
+            AND way_area > 1 * 0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real
+          UNION ALL
+          SELECT
+            way,
+            name,
+            railway AS type,
+            tags->'station' AS station,
+            NULL AS way_area
+          FROM planet_osm_point
+          WHERE way && !bbox!
+        ) _
+        WHERE type IN ('station', 'halt')
+        ORDER BY
+          CASE type
+            WHEN 'station' THEN 1
+            ELSE 2
+          END,
+          way_area DESC NULLS LAST
+      ) AS data
+  geometry: point
+  properties:
+    minzoom: 12
+    <<: *status_other
+
+############################## amenities ############################
+- id: oriented-highway-amenities
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          osm_id,
+          feature,
+          ST_GeometryN(st_union(way),1) as way, max(angle)-min(angle) as angle_diff,
+          avg(angle) as angle
+        FROM (
+          SELECT
+            p.osm_id,
+            p.way AS way,
+            p.feature AS feature,
+            CASE
+              WHEN p.feature = 'crossing' THEN cast(90+degrees(ST_Azimuth(st_lineinterpolatepoint(way1,0),st_lineinterpolatepoint(way1,1))) AS integer) % 180
+              WHEN p.feature = 'traffic_calming' THEN cast(90+degrees(ST_Azimuth(st_lineinterpolatepoint(way1,0),st_lineinterpolatepoint(way1,1))) AS integer) % 180
+              WHEN p.feature = 'cycleway_asl' THEN
+                CASE
+                  WHEN p.direction = 'backward' THEN cast(degrees(ST_Azimuth(st_lineinterpolatepoint(way1,0),st_lineinterpolatepoint(way1,1))) AS integer) + 180
+                  ELSE cast(degrees(ST_Azimuth(st_lineinterpolatepoint(way1,0),st_lineinterpolatepoint(way1,1))) AS integer)
+                END
+            END AS angle
+          FROM (
+            SELECT * FROM (
+              SELECT
+                p.osm_id,
+                p.way,
+                ST_LineMerge(ST_Intersection(st_buffer(p.way,0.1), h.way)) as way1,
+                CASE
+                  WHEN p.tags->'traffic_calming' IN ('yes', 'bump', 'dip', 'choker', 'cushion', 'hump', 'rumble_strip', 'table') THEN 'traffic_calming'
+                  WHEN p.tags->'cycleway' = 'asl' THEN 'cycleway_asl'
+                  WHEN p.highway = 'crossing' OR p.tags ? 'crossing' THEN 'crossing'
+                END AS feature,
+                p.tags->'direction' AS direction
+              FROM planet_osm_point as p
+              JOIN planet_osm_line h
+                ON (st_intersects(p.way,h.way) and h.highway is not null and h.highway not in ('footway','cycleway','path','pedestrian','steps'))
+              WHERE
+                (
+                  (
+                    (p.highway='crossing' OR p.tags ? 'crossing')
+                    AND p.bicycle IN ('yes', 'designated')
+                  )
+                  OR p.tags->'traffic_calming' IN ('yes', 'bump', 'dip', 'choker', 'cushion', 'hump', 'rumble_strip', 'table')
+                  OR p.tags->'cycleway' = 'asl'
+                )
+                AND p.way && !bbox!
+                AND h.way && !bbox!
+            ) AS p
+            WHERE ST_GeometryType(way1)='ST_LineString'
+          ) AS p
+        ) AS amenity
+        GROUP BY osm_id, feature
+      ) AS data
+  properties:
+    minzoom: 18
+    <<: *status_amenities
+
+- id: amenities-poly
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          access,
+          bicycle,
+          mtb,
+          covered,
+          shelter,
+          way,
+          area,
+          name,
+          feature,
+          capacity,
+          religion,
+          denomination,
+          compressed_air,
+          service_bicycle_pump,
+          service_bicycle_diy,
+          service_bicycle_retail_repair_rental,
+          car_wash,
+          drinking_water,
+          location,
+          memorial,
+          castle_type,
+          information,
+          artwork_type,
+          icao,
+          iata,
+          "generator:source",
+          supervised,
+          bicycle_parking,
+          vending,
+          automated,
+          score,
+          NULL AS elevation,
+          height,
+          way_area/NULLIF(0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real,0) AS way_pixels
+        FROM cyclosm_amenities_poly
+      ) AS data
+  geometry: polygon
+  properties:
+    minzoom: 14
+    <<: *status_amenities
+
+- id: amenities-points
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: cyclosm_amenities_point
+  geometry: point
+  properties:
+    cache-features: true
+    minzoom: 14
+    <<: *status_amenities
+
+- id: amenities-line
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          COALESCE(
+            'highway_' || CASE WHEN tags @> 'ford=>yes' OR tags @> 'ford=>stepping_stones' THEN 'ford' END
+          ) AS feature
+        FROM planet_osm_line
+        -- The upcoming where clause is needed for performance only, as the CASE statements would end up doing the equivalent filtering
+        WHERE tags @> 'ford=>yes' OR tags @> 'ford=>stepping_stones'
+        ORDER BY CASE WHEN layer~E'^\\d+$' THEN layer::integer ELSE 0 END
+      ) AS data
+  geometry: linestring
+  properties:
+    minzoom: 16
+    <<: *status_amenities
+
+########################### other #####################
+- id: clpc
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          CASE
+            WHEN members[array_position(members, CONCAT('w', h1.osm_id)) + 1] = 'from' THEN
+              ST_Intersection(
+                h1.way,
+                ST_Buffer(ST_Intersection(h1.way, h2.way), 20)
+              )
+            ELSE
+              ST_Intersection(
+                h2.way,
+                ST_Buffer(ST_Intersection(h1.way, h2.way), 20)
+              )
+          END AS way,
+          CASE
+            WHEN members[array_position(members, CONCAT('w', h1.osm_id)) + 1] = 'from' THEN
+              cast(degrees(ST_Angle(h1.way, h2.way)) AS integer)
+            ELSE
+              cast(degrees(ST_Angle(h2.way, h1.way)) AS integer)
+          END AS from_to_angle,
+          CASE
+            WHEN members[array_position(members, CONCAT('w', h1.osm_id)) + 1] = 'from' THEN
+              cast(degrees(ST_Azimuth(
+                st_lineinterpolatepoint(h1.way, 0.8),
+                ST_Intersection(h1.way, h2.way)
+              )) AS integer)
+            ELSE
+              cast(degrees(ST_Azimuth(
+                st_lineinterpolatepoint(h2.way, 0.8),
+                ST_Intersection(h1.way, h2.way)
+              )) AS integer)
+          END AS from_azimuth
+        FROM
+            planet_osm_line h1
+            JOIN planet_osm_line h2 ON ST_Intersects(h1.way, h2.way)
+            JOIN planet_osm_rels r ON (
+                parts @> array[h1.osm_id, h2.osm_id]
+                AND r.tags @> array['type','restriction','restriction:bicycle','give_way']
+            )
+        WHERE
+            h1.way && !bbox!
+            AND h2.way && !bbox!
+            AND h1.highway IS NOT NULL
+            AND h2.highway IS NOT NULL
+            AND h1.osm_id > h2.osm_id
+      ) AS data
+  geometry: point
+  properties:
+    minzoom: 19
+    status: off
+
+- id: power-towers
+  geometry: point
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (SELECT
+          way,
+          power
+      FROM planet_osm_point
+      WHERE power IN ('tower', 'pole')
+      ORDER BY
+        CASE
+          WHEN power = 'tower' THEN 1
+          WHEN power = 'pole' THEN 2
+          ELSE NULL
+        END
+      ) AS power_towers
+  properties:
+    minzoom: 14
+    <<: *status_other
+
+######################################## labels ============================
+- id: area_label
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT  -- area_label
+          COALESCE(
+            landuse,
+            leisure,
+            CASE WHEN shop IN ('mall') THEN 'retail' ELSE NULL END,
+            boundary,
+            "natural",
+            amenity,
+            CASE WHEN man_made IN ('works', 'wastewater_plant', 'water_works') THEN 'industrial' ELSE NULL END
+          ) AS type,
+          name,
+          way_area AS area,
+          ST_PointOnSurface(way) AS way
+        FROM planet_osm_polygon
+        WHERE name IS NOT NULL AND
+          (landuse IN ('basin', 'cemetery', 'commercial', 'farmyard', 'forest', 'grass', 'industrial', 'military', 'retail')
+            OR shop IN ('mall')
+            OR (leisure IS NOT NULL AND (leisure != 'sport_centre' OR sport != 'swimming'))
+            OR "natural" IS NOT NULL
+            OR amenity IN ('embassy', 'library', 'school', 'townhall', 'university')
+            OR man_made IN ('works', 'wastewater_plant', 'water_works')
+            OR boundary IN ('aboriginal_lands', 'national_park')
+            OR (boundary = 'protected_area' AND tags->'protect_class' IN ('1','1a','1b','2','3','4','5','6','7','24','97','98','99')))
+          AND way && !bbox!
+      ) AS data
+  geometry: point
+  properties:
+    minzoom: 10
+    <<: *status_label
+
+- id: waterway_label
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT way, waterway AS type, name
+        FROM planet_osm_line
+        WHERE
+          waterway IN ('canal', 'river', 'stream')
+          AND name IS NOT NULL
+            AND (tunnel IS NULL OR tunnel = 'no')
+      ) AS data
+  geometry: linestring
+  properties:
+    minzoom: 13
+    <<: *status_label
+
+- id: barriers
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT barrier, way, z_order
+        FROM planet_osm_point
+        WHERE barrier IN ('block', 'bollard', 'cattle_grid', 'chain', 'cycle_barrier', 'gate', 'jersey_barrier', 'kissing_gate', 'lift_gate', 'log', 'motorcycle_barrier', 'planter', 'stile', 'swing_gate', 'turnstile')
+        ORDER BY z_order NULLS LAST
+      ) AS data
+  geometry: point
+  properties:
+    minzoom: 17
+    <<: *status_other
+
+- id: amenities-poly-text
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          feature,
+          access,
+          capacity,
+          name,
+          score,
+          height,
+          information,
+          way_area/NULLIF(0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real,0) AS way_pixels
+        FROM cyclosm_amenities_poly
+      ) AS data
+  geometry: polygon
+  properties:
+    minzoom: 14
+    <<: *status_amenities
+
+# Dedicated layer for peak/saddle,cave
+# A peak generally have 2 different nodes, not always exactly at the same location, but with the same name
+# natural=peak , tourism=information 
+# We had to transfer them from amenities-points-text to mountain-point-text, because on some zoom values, the 2 texts were overlapping, causing nothing to be drawn
+
+- id: mountain-point-text
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          "natural",
+          elevation,
+          tourism,
+          ROUND (!scale_denominator!::real) as zscale,
+          CONCAT(
+              name,
+              CASE WHEN (elevation IS NOT NULL  AND "natural" != 'cave_entrance')  
+                   THEN CONCAT(  E'\n' ,    REPLACE(ROUND(elevation)::TEXT, '-', U&'\2212'),    'm') 
+                   ELSE NULL 
+              END
+              ) AS name
+          FROM
+          (
+             SELECT 
+                way,
+                "natural",
+                tourism,
+                CASE
+                     WHEN ele ~ '^-?\d{1,4}(\.\d+)?$' THEN ele::NUMERIC
+                     ELSE NULL
+                END AS elevation,
+                name
+            FROM planet_osm_point
+            WHERE name IS NOT NULL   AND ( "natural" IN ( 'saddle' ,'peak' , 'volcano' ,'cave_entrance' )   )        
+         ) AS zzz
+      ) AS data
+  geometry: point
+  properties:
+    minzoom: 14
+    <<: *status_label
+
+- id: mountain-poly-text
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          "natural",
+          tourism,
+          ROUND (!scale_denominator!::real) as zscale,
+          name
+       FROM planet_osm_polygon
+            WHERE name IS NOT NULL   AND ( "natural" IN ( 'saddle' ,'peak' , 'volcano' ,'cave_entrance' )   OR tourism in ( 'wilderness_hut' , 'alpine_hut' ) )        
+      ) AS data
+  geometry: polygon
+  properties:
+    minzoom: 14
+    <<: *status_label
+
+- id: amenities-points-text
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          feature,
+          access,
+          capacity,
+          CONCAT(
+              name,
+              CASE WHEN name IS NOT NULL AND elevation IS NOT NULL THEN E'\n' ELSE NULL END,
+              CASE WHEN elevation IS NOT NULL THEN CONCAT(REPLACE(ROUND(elevation)::TEXT, '-', U&'\2212'), U&'\00A0', 'm') ELSE NULL END
+          ) AS name,
+          score,
+          height,
+          information,
+          NULL AS way_pixels
+        FROM cyclosm_amenities_point
+        WHERE name IS NOT NULL           -- BM
+      ) AS data
+  geometry: point
+  properties:
+    minzoom: 14
+    <<: *status_amenities
+
+- id: highway_area_label
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT highway AS type, name, way_area AS area, ST_PointOnSurface(way) AS way
+        FROM planet_osm_polygon
+        WHERE name IS NOT NULL AND highway IS NOT NULL
+          AND way && !bbox!
+      ) AS data
+  geometry: point
+  properties:
+    minzoom: 14
+    <<: *status_label
+
+- id: roads-text-ref-low-zoom
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          highway,
+          height,
+          width,
+          refs
+        FROM (
+          SELECT
+            way,
+            osm_id,
+            highway,
+            array_length(refs,1) AS height,
+            (SELECT MAX(char_length(ref)) FROM unnest(refs) AS u(ref)) AS width,
+            array_to_string(refs, E'\n') AS refs
+          FROM (
+            SELECT
+              way,
+              osm_id,
+              highway,
+              string_to_array(ref, ';') AS refs
+            FROM planet_osm_roads
+            WHERE highway IN ('motorway', 'trunk', 'primary', 'secondary')
+              AND ref IS NOT NULL
+          ) AS p
+        ) AS q
+        WHERE height <= 4 AND width <= 11
+        ORDER BY
+        CASE
+          WHEN highway = 'motorway' THEN 38
+          WHEN highway = 'trunk' THEN 37
+          WHEN highway = 'primary' THEN 36
+          WHEN highway = 'secondary' THEN 35
+          WHEN highway = 'tertiary' THEN 34
+          WHEN highway = 'unclassified' THEN 33
+          WHEN highway = 'residential' THEN 32
+          WHEN highway = 'runway' THEN 6
+          WHEN highway = 'taxiway' THEN 5
+          ELSE NULL
+        END DESC NULLS LAST,
+        height DESC,
+        width DESC,
+        refs,
+        osm_id
+      ) AS data
+  properties:
+    minzoom: 10
+    maxzoom: 12
+    <<: *status_label
+
+- id: roads-text-ref
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          highway,
+          height,
+          width,
+          refs
+        FROM (
+          SELECT
+            osm_id,
+            way,
+            highway,
+            array_length(refs,1) AS height,
+            (SELECT MAX(char_length(ref)) FROM unnest(refs) AS u(ref)) AS width,
+            array_to_string(refs, E'\n') AS refs
+          FROM (
+            SELECT
+              osm_id,
+              way,
+              COALESCE(
+                CASE WHEN highway IN ('motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'unclassified', 'residential', 'track') THEN highway ELSE NULL END,
+                CASE WHEN aeroway IN ('runway', 'taxiway') THEN aeroway ELSE NULL END
+              ) AS highway,
+              string_to_array(ref, ';') AS refs
+            FROM planet_osm_line
+            WHERE (highway IN ('motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'unclassified', 'residential', 'track') OR aeroway IN ('runway', 'taxiway'))
+              AND ref IS NOT NULL
+        ) AS p
+      ) AS q
+      WHERE height <= 4 AND width <= 11
+      ORDER BY
+        CASE
+          WHEN highway = 'motorway' THEN 38
+          WHEN highway = 'trunk' THEN 37
+          WHEN highway = 'primary' THEN 36
+          WHEN highway = 'secondary' THEN 35
+          WHEN highway = 'tertiary' THEN 34
+          WHEN highway = 'unclassified' THEN 33
+          WHEN highway = 'residential' THEN 32
+          WHEN highway = 'track' THEN 30
+          WHEN highway = 'runway' THEN 6
+          WHEN highway = 'taxiway' THEN 5
+          ELSE NULL
+        END DESC NULLS LAST,
+        height DESC,
+        width DESC,
+        refs,
+        osm_id
+      ) AS data
+  properties:
+    minzoom: 13
+    <<: *status_label
+
+- id: roads-text-name
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          CASE
+            WHEN substr(type, length(type)-4, 5) = '_link' THEN substr(type, 0, length(type)-4)
+            ELSE type
+          END AS highway,
+          tunnel,
+          name,
+          oneway,
+          oneway_bicycle,
+          bicycle
+        FROM cyclosm_ways l
+        JOIN (VALUES -- this join is also putting a condition on what is selected. features not matching it do not make it into the results.
+          ('motorway', 380),
+          ('trunk', 370),
+          ('primary', 360),
+          ('secondary', 350),
+          ('tertiary', 340),
+          ('residential', 330),
+          ('unclassified', 330),
+          ('road', 330),
+          ('living_street', 320),
+          ('pedestrian', 310),
+          ('motorway_link', 240),
+          ('trunk_link', 230),
+          ('primary_link', 220),
+          ('secondary_link', 210),
+          ('tertiary_link', 200),
+          ('service', 150)
+        ) AS ordertable (type, prio)
+        USING (type)
+        WHERE type IN ('motorway', 'motorway_link', 'trunk', 'trunk_link', 'primary', 'primary_link', 'secondary', 'secondary_link', 'tertiary',
+          'tertiary_link', 'residential', 'unclassified', 'road', 'service', 'pedestrian', 'living_street')
+        AND ( -- There is a label to render
+          name IS NOT NULL
+          OR oneway IN ('yes', '-1')
+          OR oneway_bicycle IN ('yes', '-1')
+        )
+        ORDER BY
+          z_order DESC, -- put important roads first
+          CASE WHEN layer~E'^\\d+$' THEN layer::integer ELSE 0 END, -- put top layered roads first
+          length(name) DESC, -- Try to fit big labels in first
+          name DESC, -- Force a consistent ordering between differently named streets
+          l.osm_id DESC -- Force an ordering for streets of the same name, e.g. dualized roads
+      ) AS data
+  properties:
+    cache-features: true
+    minzoom: 13
+    <<: *status_label
+
+- id: paths-text-name
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          highway,
+          COALESCE(name, tags->'mtb:name') AS name,
+          CASE
+            WHEN oneway IN ('yes', '-1') THEN oneway
+            ELSE 'no'
+          END AS oneway,
+          CASE
+            WHEN tags->'oneway:bicycle' IS NOT NULL THEN tags->'oneway:bicycle'
+            WHEN oneway IS NOT NULL THEN oneway
+            ELSE 'no'
+          END AS oneway_bicycle
+        FROM planet_osm_line
+        WHERE highway IN ('bridleway', 'footway', 'cycleway', 'path', 'track', 'steps')
+      ) AS data
+  properties:
+    minzoom: 15
+    <<: *status_label
+
+- id: roads-text-conditional
+  geometry: linestring
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          highway,
+          TRIM(
+            LEADING ', ' FROM
+              CONCAT(
+                tags->'bicycle:conditional',
+                CASE WHEN tags->'motor_vehicle:conditional' IS NOT NULL THEN CONCAT(', motor=', tags->'motor_vehicle:conditional') ELSE NULL END,
+                CASE WHEN tags->'vehicle:conditional' IS NOT NULL THEN CONCAT(', vehicle=', tags->'vehicle:conditional') ELSE NULL END,
+                CASE WHEN tags->'access:conditional' IS NOT NULL THEN CONCAT(', all=', tags->'access:conditional') ELSE NULL END,
+                CASE WHEN highway IN ('path', 'cycleway', 'track') THEN
+                    -- Avoid displaying maxspeed value for highways where maxspeed is drawn by fill color
+                    CASE WHEN tags->'maxspeed' IS NOT NULL THEN CONCAT(', maxspeed=', tags->'maxspeed') ELSE NULL END
+                ELSE NULL END,
+                CASE WHEN tags->'flood_prone'='yes' THEN ', flood prone' ELSE NULL END
+              )
+          ) AS conditional
+        FROM planet_osm_line
+        WHERE (
+          highway IS NOT NULL AND (
+            tags->'motor_vehicle:conditional' IS NOT NULL
+            OR tags->'vehicle:conditional' IS NOT NULL
+            OR tags->'access:conditional' IS NOT NULL
+            OR tags->'bicycle:conditional' IS NOT NULL
+            OR tags->'flood_prone'='yes'
+          )
+        ) OR (
+          highway IN ('path', 'cycleway', 'track')
+          AND tags->'maxspeed'~E'^\\d+$'
+        )
+      ) AS data
+  properties:
+    minzoom: 20
+    <<: *status_label
+
+- id: addresses
+  geometry: point
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          "addr:housenumber" AS addr_housenumber,
+          "addr:housename" AS addr_housename,
+          tags->'addr:unit' AS addr_unit,
+          way_area/NULLIF(0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real,0) AS way_pixels  ---- way_area/NULLIF(POW(!scale_denominator!*0.001*0.28,2),0) AS way_pixels
+        FROM planet_osm_polygon
+        WHERE way && !bbox! AND (
+          ("addr:housenumber" IS NOT NULL)
+          OR ("addr:housename" IS NOT NULL)
+          OR (tags->'addr:unit' IS NOT NULL)
+        )
+        AND building IS NOT NULL
+      UNION ALL
+        SELECT
+          way,
+          "addr:housenumber" AS addr_housenumber,
+          "addr:housename" AS addr_housename,
+          tags->'addr:unit' AS addr_unit,
+          NULL AS way_pixels
+        FROM planet_osm_point
+        WHERE way && !bbox! AND (
+          ("addr:housenumber" IS NOT NULL)
+          OR ("addr:housename" IS NOT NULL)
+          OR (tags->'addr:unit' IS NOT NULL)
+        )
+        ORDER BY way_pixels DESC NULLS LAST
+      ) AS addresses
+  properties:
+    cache-features: true
+    minzoom: 18
+    <<: *status_label
+
+################################# add an overlay over military areas #################################################
+- id: military-overlay
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          landuse,
+          military,
+          way_area/NULLIF(0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real,0) AS way_pixels
+        FROM planet_osm_polygon
+        WHERE
+          (landuse = 'military' OR military = 'danger_area')
+          AND building IS NULL
+          AND way_area > 1*0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real
+        ORDER BY way_area DESC
+      ) AS data
+  geometry: polygon
+  properties:
+    minzoom: 7
+    <<: *status_other
+
+############################## draw legend #############################"
+- id: legend-icons
+  class: legend
+  <<: *extents
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT
+          way,
+          tags->'icon' AS icon,
+          tags->'label' AS label
+        FROM planet_osm_point
+        WHERE tags->'icon' IS NOT NULL
+      ) AS data
+  geometry: point
+  properties:
+    cache-features: true
+    status: off
+
+
+
+
+

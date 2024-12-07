@@ -1,0 +1,48 @@
+######################################################################################################
+#
+# Dockerfile for building "tirex" image , using recent LongTermSupport version ubuntu:noble
+#
+#  
+######################################################################################################
+
+FROM ubuntu:noble
+
+# tell that installs are made in non interactive mode
+ENV DEBIAN_FRONTEND=noninteractive
+
+
+
+RUN apt update && \
+    apt  install --no-install-recommends -y ca-certificates curl gnupg apt-utils && \
+    echo "\n------------------ Install required tools --------------------" && \
+    apt install --no-install-recommends -y    rsyslog python3   apache2 libapache2-mod-tile    postgresql-client wget nano && \
+    apt install --no-install-recommends -y    fonts-hanazono fonts-noto-cjk fonts-noto-hinted fonts-noto-unhinted  unifont && \
+    apt install --no-install-recommends -y    tirex node-carto libjs-leaflet && \
+    apt install --no-install-recommends -y    telnet && \
+    echo "\n------------------ Final cleaning to save disk space --------------------" && \
+    apt clean &&  rm -rf /var/lib/apt/lists/*   
+
+#RUN apt install --no-install-recommends -y tirex-example-map 
+#RUN apt install --no-install-recommends -y  telnet 
+
+# prepare directory for sockets and pid file
+RUN mkdir /run/tirex && chmod a+rwx /run/tirex
+
+# enable/disabled apache modules and sites
+RUN a2dismod mpm_event  && a2enmod mpm_prefork headers  proxy proxy_http  rewrite && a2dissite 000-default
+
+# copy files: conf files for apache/tirex/mapnik
+# we AVOID copying directly on / because a trouble in directory rights would break access right to important system directories !
+COPY conf/apache2  /etc/apache2
+COPY conf/tirex  /etc/tirex
+
+# this directory is created by volume mapping, defined in docker-compose.yml
+WORKDIR /osmhike
+
+ENTRYPOINT ["bash" , "tirex/tirex.sh" ]
+CMD [ "server" ]
+ 
+
+
+
+

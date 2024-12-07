@@ -1,0 +1,4 @@
+# OsmType  Tag          DataType     Flags
+node,way   ele			int4			linear
+#way       way_area     real                # This is calculated during import
+way        elegroup     int4         linear   # force creation of this column 

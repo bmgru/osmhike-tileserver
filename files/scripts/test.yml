@@ -1,0 +1,19 @@
+# {'lib': {'toto': 'jesuistoto'}, 'user': {'toto': 'jesuistoto', 'a': {'toto': 'jesuistoto'}}}
+lib: &truc
+    toto: jesuistoto
+
+user:
+    a: *truc
+    <<: *truc
+sql: |-
+  (
+      blancs          
+      pas blancs
+  )
+tab:
+
+- t1: truc
+
+- t2: truc
+- t3: truc
+
