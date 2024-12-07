@@ -1,3 +1,0 @@
-[ -L zzz ] || ln -s /tmp zzz
-ls -l
-
