@@ -2,13 +2,6 @@ name: Osmhike
 description: 'Hiking oriented TileServer based on Cyclosm'
 attribution: Data © OpenStreetMap (and) contributors,  ODbL , Cyclosm , Osmhike
 
-# Left-Lower and Right-Upper  points defining the map bounds
-bounds: &world
-  - -180
-  - -85.05112877980659
-  - 180
-  - 85.05112877980659
-
 # Lon/Lat center  and zoom for the initial map
 center:
   - 2.5
@@ -25,35 +18,52 @@ maxzoom: 20
 # This is the description of Web-Mercator (used by Openstreetmap) , using the syntax defined by https://proj.org
 srs: "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over"
 
+# Defines an extra buffer around the metatiles to render
+# it can resolves troubles with clipped text or duplicate text, when a label is over tiles boundaries
+# 128 is 0,5*tileswidth
+buffer-size: 128
+
 #------------------------------- Declare blocks that can be reused later in the document -----------------------------------
 _parts:
 
-  # This block is reused by each layer
-  extents: &extents
-    srs-name: "900913"
+  # This block is reused by each layer, whose data is based on SpatialReferenceSystem=WebMercator used by openStreetMap
+  srs-osm: &srs-osm
     srs: "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over"
 
-  # this block will be used by GPX routes . do NOT use this one for hillshading 
-  extents84: &extents84
-    extent: *world
-    srs-name: "WGS84"
+  # Left-Lower and Right-Upper  points defining the map bounds , in WebMercator  coordinates ( X,Y in meters )
+  # The map will exclude objects outside those bounnds
+  # If you want to restrict the map to a smaller area, you can use https://tool-online.com/en/coordinate-converter.php to convert lon/lat GoogleMaps coordinates to X,Y WebMercator meters
+  extentworld: &extentworld
+    extent:  "-20037508,-20037508,20037508,20037508"
+
+  # Left-Lower and Right-Upper  points defining the map bounds , in WGS84 coordinates
+  worldWGS84: &worldWGS84
+    - -180
+    - -85.05112877980659
+    - 180
+    - 85.05112877980659
+
+  # This block will be used by GPX routes . do NOT use this one for hillshading
+  # SpatialReferenceSystem=WSG84 
+  srs-gpx: &srs-gpx
+    #extent: *worldWGS84   # CAUTION : this value is NOT exported to .xml
     srs: "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 
-  # block for standard oms2sql import
+  # Block for standard oms2sql import
   osm2pgsql: &osm2pgsql
     type: "postgis"
     dbname: "osm"
     key_field: ""
     geometry_field: "way"
-    extent: "-20037508,-20037508,20037508,20037508"
+    <<: *extentworld
 
-  # block for specific database for contours
+  # Block for specific database for contours
   osm2pgsqlcontours: &osm2pgsqlcontours
     type: "postgis"
     dbname: "contours"
     key_field: ""
     geometry_field: "way"
-    extent: "-20037508,-20037508,20037508,20037508"
+    <<: *extentworld
 
   ##################################################### allows to swith on/off some groups of layers
   status_hillshade: &status_hillshade
@@ -138,7 +148,7 @@ Layer:
 
 # show ocean/land limits : low zoom
 - id: land-low
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     file: http://osmdata.openstreetmap.de/download/simplified-land-polygons-complete-3857.zip
     type: shape
@@ -150,7 +160,7 @@ Layer:
 
 # show ocean/land limits : high zoom
 - id: land-high
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     file: http://osmdata.openstreetmap.de/download/land-polygons-split-3857.zip
     type: shape
@@ -163,7 +173,7 @@ Layer:
 ############################ LEGEND must be put HERE , so that other objects can draw over its border #####################
 - id: legend-border
   class: legend
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -181,7 +191,7 @@ Layer:
 
 - id: legend-labels
   class: legend
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -208,7 +218,7 @@ Layer:
 ##################################################################################
 
 - id: landuse_low
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -246,7 +256,7 @@ Layer:
 #  type will contain  a concatenation  like  landuse_forest , natural_wood , leisure_stadium ....
 #  show only items > 4 pixels
 - id: landuse_med
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -283,7 +293,7 @@ Layer:
 # landscape usage ( high zooms )
 #  type will contain  a concatenation  like  landuse_forest , natural_wood , leisure_stadium ....
 - id: landuse_high
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -317,7 +327,7 @@ Layer:
 # used to draw leaf type for forests (landuse=forest or natural=wood )
 #  type is forced to 'wood'
 - id: landuse-overlay
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -341,7 +351,7 @@ Layer:
 
 ############################ hillshade ################################
 - id: hillshade-low
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     type: gdal
     file: ../demdata/hillshade-500.tif
@@ -353,7 +363,7 @@ Layer:
     <<: *status_hillshade
 
 - id: hillshade-high
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     type: gdal
     file: ../demdata/hillshade-30.tif
@@ -366,7 +376,7 @@ Layer:
 ################################## contours lines ##############################
 - id: contours100
   class: contours
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsqlcontours
     table: |-
@@ -383,7 +393,7 @@ Layer:
 
 - id: contours50
   class: contours
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsqlcontours
     table: |-
@@ -400,7 +410,7 @@ Layer:
 
 - id: contours20
   class: contours
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsqlcontours
     table: |-
@@ -417,7 +427,7 @@ Layer:
 
 - id: contours10
   class: contours
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsqlcontours
     table: |-
@@ -434,7 +444,7 @@ Layer:
 
 ######################## waterway: river,canal .... ####################################
 - id: waterway_low
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -453,7 +463,7 @@ Layer:
     <<: *status_other
 
 - id: waterway_med
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -471,7 +481,7 @@ Layer:
     <<: *status_other
 
 - id: waterway_high
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -489,7 +499,7 @@ Layer:
 
 ######################### water : lake, pond .... ###################################
 - id: water_low
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -518,7 +528,7 @@ Layer:
     <<: *status_other
 
 - id: water_med
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -547,7 +557,7 @@ Layer:
     <<: *status_other
 
 - id: water_high
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -575,7 +585,7 @@ Layer:
 
 ########################### human artifacts ############################
 - id: buildings
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -599,7 +609,7 @@ Layer:
 
 - id: piers-poly
   geometry: polygon
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -614,7 +624,7 @@ Layer:
 
 - id: piers-line
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -628,7 +638,7 @@ Layer:
     <<: *status_other
 
 - id: aeroway
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -644,7 +654,7 @@ Layer:
 
 ############################################# tunnel , bridge , road , track/path ######################
 - id: tunnel
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -682,7 +692,7 @@ Layer:
     <<: *status_other
 
 - id: turning_circle_case
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -697,7 +707,7 @@ Layer:
     <<: *status_other
 
 - id: leisure_track
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -715,7 +725,7 @@ Layer:
     <<: *status_other
 
 - id: roads_low
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -749,7 +759,7 @@ Layer:
     <<: *status_roadsmedlow
 
 - id: roads_med
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -790,7 +800,7 @@ Layer:
 
 
 - id: roads_high
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -835,7 +845,7 @@ Layer:
 
 
 - id: turning_circle_fill
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -851,7 +861,7 @@ Layer:
 
 - id: aerialways
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -873,7 +883,7 @@ Layer:
     <<: *status_other
 
 - id: bridge
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -913,7 +923,7 @@ Layer:
 ############################### administrative boundaries #####################
 - id: admin-low
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -933,7 +943,7 @@ Layer:
 
 - id: admin-mid
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -953,7 +963,7 @@ Layer:
 
 - id: admin-high
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -973,7 +983,7 @@ Layer:
 ######################### routes #################################
 - id: ferry-routes
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -989,7 +999,7 @@ Layer:
     <<: *status_other
 
 - id: bicycle_routes_gen0
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1008,7 +1018,7 @@ Layer:
     status: off   # skipped
 
 - id: bicycle_routes_gen1
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1030,7 +1040,7 @@ Layer:
     status: off   # skipped
 
 - id: bicycle_routes_gen2
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1054,7 +1064,7 @@ Layer:
     status: off   # skipped
 
 - id: bicycle_routes_bicycle_gen3
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1087,7 +1097,7 @@ Layer:
     <<: *status_cycle3
 
 - id: bicycle_routes_mtb_gen3
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1110,7 +1120,7 @@ Layer:
 
 ############################### gpx route #######################
 - id: route
-  <<: *extents84
+  <<: *srs-gpx
   Datasource:
     file: '${gpxroute}'
     type: ogr
@@ -1122,7 +1132,7 @@ Layer:
 ############################### power line ######################
 - id: power-minorline
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1137,7 +1147,7 @@ Layer:
 
 - id: power-line
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1154,7 +1164,7 @@ Layer:
 ################################### other stuff ###########################
 - id: protected-areas
   geometry: polygon
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1178,7 +1188,7 @@ Layer:
 
 - id: trees
   geometry: polygon
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1201,7 +1211,7 @@ Layer:
 
 - id: barriers_line
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1240,7 +1250,7 @@ Layer:
     <<: *status_other
 
 - id: cycle-junction-nodes
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1271,7 +1281,7 @@ Layer:
     <<: *status_other
 
 - id: cliffs
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1290,7 +1300,7 @@ Layer:
 
 - id: capital-names
   geometry: point
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1319,7 +1329,7 @@ Layer:
 - id: country-names
   class: country
   geometry: point
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1344,7 +1354,7 @@ Layer:
 - id: state-names
   class: state
   geometry: point
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1368,7 +1378,7 @@ Layer:
 # for low zoom, show only CITY to avoid a huge data extraction , for medium zoom show CITY TOWN , 
 - id: placenames-medium
   geometry: point
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1423,7 +1433,7 @@ Layer:
 
 - id: placenames-small
   geometry: point
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1473,7 +1483,7 @@ Layer:
 
 - id: ferry-routes-text
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1493,7 +1503,7 @@ Layer:
 
 - id: admin-text
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1516,7 +1526,7 @@ Layer:
 
 - id: protected-areas-text
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1538,7 +1548,7 @@ Layer:
 
 # printing the bicycle routes labels (ref,name ) has been limited to zoom>=11, since the same has been done for coloring roads 
 - id: bicycle_routes_labels
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1555,7 +1565,7 @@ Layer:
     <<: *status_other
 
 - id: train_stations
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1602,7 +1612,7 @@ Layer:
 
 ############################## amenities ############################
 - id: oriented-highway-amenities
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1663,7 +1673,7 @@ Layer:
     <<: *status_amenities
 
 - id: amenities-poly
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1711,7 +1721,7 @@ Layer:
     <<: *status_amenities
 
 - id: amenities-points
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: cyclosm_amenities_point
@@ -1722,7 +1732,7 @@ Layer:
     <<: *status_amenities
 
 - id: amenities-line
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1743,8 +1753,11 @@ Layer:
     <<: *status_amenities
 
 ########################### other #####################
+
+# "Ceder Le Passage Cycliste"
+# traffic sign which allows bikers (under some conditions) to continue even when traffic light is red
 - id: clpc
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1801,7 +1814,7 @@ Layer:
 
 - id: power-towers
   geometry: point
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1823,7 +1836,7 @@ Layer:
 
 ######################################## labels ============================
 - id: area_label
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1859,7 +1872,7 @@ Layer:
     <<: *status_label
 
 - id: waterway_label
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1877,7 +1890,7 @@ Layer:
     <<: *status_label
 
 - id: barriers
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1893,7 +1906,7 @@ Layer:
     <<: *status_other
 
 - id: amenities-poly-text
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1921,7 +1934,7 @@ Layer:
 # We had to transfer them from amenities-points-text to mountain-point-text, because on some zoom values, the 2 texts were overlapping, causing nothing to be drawn
 
 - id: mountain-point-text
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1960,7 +1973,7 @@ Layer:
     <<: *status_label
 
 - id: mountain-poly-text
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -1980,7 +1993,7 @@ Layer:
     <<: *status_label
 
 - id: amenities-points-text
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -2008,7 +2021,7 @@ Layer:
     <<: *status_amenities
 
 - id: highway_area_label
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -2025,7 +2038,7 @@ Layer:
 
 - id: roads-text-ref-low-zoom
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -2081,7 +2094,7 @@ Layer:
 
 - id: roads-text-ref
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -2140,7 +2153,7 @@ Layer:
 
 - id: roads-text-name
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -2197,7 +2210,7 @@ Layer:
 
 - id: paths-text-name
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -2224,7 +2237,7 @@ Layer:
 
 - id: roads-text-conditional
   geometry: linestring
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -2266,7 +2279,7 @@ Layer:
 
 - id: addresses
   geometry: point
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -2306,7 +2319,7 @@ Layer:
 
 ################################# add an overlay over military areas #################################################
 - id: military-overlay
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
@@ -2331,7 +2344,7 @@ Layer:
 ############################## draw legend #############################"
 - id: legend-icons
   class: legend
-  <<: *extents
+  <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
