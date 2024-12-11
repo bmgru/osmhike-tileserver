@@ -99,7 +99,7 @@ _parts:
 
   # GPX route : use if ONLY if there is a valid gpx file
   status_gpx : &status_gpx
-    status: on
+    status: off
 
   # mountain bike info
   status_mtb3 : &status_mtb3
