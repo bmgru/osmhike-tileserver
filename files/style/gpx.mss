@@ -1,7 +1,7 @@
 #route {
-    line-width: 5;
-    line-color: #012d64;
-    line-opacity: 0.75;
+    line-width: 8;
+    line-color: orange; // #012d64;
+    line-opacity: 0.5;
     line-join: round;
     line-cap: round;
 }

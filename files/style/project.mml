@@ -97,6 +97,10 @@ _parts:
   status_cycle3 : &status_cycle3
     status: on
 
+  # GPX route : use if ONLY if there is a valid gpx file
+  status_gpx : &status_gpx
+    status: on
+
   # mountain bike info
   status_mtb3 : &status_mtb3
     status: on
@@ -1122,12 +1126,12 @@ Layer:
 - id: route
   <<: *srs-gpx
   Datasource:
-    file: '${gpxroute}'
+    file: ../gpx/gpxroute  # path is relative to style directory . This should be a valid file, or a link to a valid file
     type: ogr
-    layer: tracks
+    layer: routes   # use this, if gpx file contains <rte> elements, which is the keyword for "routes"
   geometry: line
   properties:
-    status: off
+    <<: *status_gpx
 
 ############################### power line ######################
 - id: power-minorline
