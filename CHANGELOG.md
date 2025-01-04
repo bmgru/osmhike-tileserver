@@ -17,5 +17,5 @@ Implementation evolution
 
 ## V1.0.0
 
-First published version
+First published version (December 2024)
 

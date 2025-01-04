@@ -15,6 +15,8 @@ Three goals:
 Designed for Linux. 
 The Docker infrastructure must be installed ( see mini-guide in tutorial  )
 
+People stuck on Windows, might try the WSL feature of Windows, which allows to run Linux inside Windows...
+
 ## Installation
 
 Download the project from github as a .zip file, and unzip to your home directory
