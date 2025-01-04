@@ -3,7 +3,7 @@ Osmhike
 
 ## Hiking oriented tile server, based on Cyclosm
 
-This is a reworked clone of CyclOSM (cyclosm-cartocss-style-master  on github  sept2024) 
+This is a strongly reworked clone of CyclOSM (cyclosm-cartocss-style-master  on github  sept2024) 
 
 Three goals:
 - allow to build a personnal tile-server, for producing maps adapted to mountain hiking, (without loosing too much bike information)

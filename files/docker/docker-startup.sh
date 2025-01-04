@@ -55,6 +55,23 @@ CreateDatabase()
   fi
 }
 
+#############################################################
+# function to create the needed views
+# must be called before running Kosmtik or Tirex, in case some features have been modified
+#
+############################################################
+CreateViewsFunctions()
+{
+
+  echo "\nRun cyclosm-specific sql script to create some views"
+  psql --dbname=$DB_OSM --file=$STYLE/views.sql
+
+  # create specific sql file for road sizes
+  bash scripts/zfact.sh $STYLE $DB_OSM
+
+}
+
+
 
 echo "\n===================ACTION=$ACTION====== `date '+%H:%M:%S'` ==================================="
 
@@ -93,11 +110,15 @@ import)
   --drop  \
  $OSMFILE
 
-  echo "\nRun cyclosm-specific sql script to create some views"
-  psql --dbname=$DB_OSM --file=$STYLE/views.sql
+
 
   echo "\nCreate indexes to optimize performance `date '+%H:%M:%S'` "
   psql --dbname=$DB_OSM --file=$STYLE/zindex.sql
+
+  # creation of Views/Functions
+  CreateViewsFunctions
+
+
 
   echo ""
   echo "Finished !   `date '+%H:%M:%S'` " 
@@ -206,8 +227,8 @@ legend1)
       echo "\n------------ Import legend file to database  ---------------"
       osm2pgsql --hstore --slim -c -G --drop --database $DB_OSM  $OSMLEGEND
 
-      echo "\nRun cyclosm-specific sql script to create some views"
-      psql --dbname=$DB_OSM --file=$STYLE/views.sql
+      # creation of Views/Functions
+      CreateViewsFunctions
 
       echo "\n------------ finished !  ---------------"
       ;;
@@ -234,6 +255,10 @@ kosmtik)
     cp /tmp/.kosmtik-config.yml .kosmtik-config.yml  
   fi
   export KOSMTIK_CONFIGPATH=".kosmtik-config.yml"
+
+  # creation of views/Functions
+  CreateViewsFunctions
+
 
   # tile web server
   kosmtik serve $STYLE/project.mml --host 0.0.0.0

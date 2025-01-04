@@ -74,6 +74,12 @@
 
 #amenities-points,
 #amenities-poly {
+
+  // osmhike: specific handling for mountain guipost
+  [information = 'guidepost'][hiking!='no'][zoom>=16] {
+      marker-file: url('symbols/openstreetmap-carto/tourism/guidepost.svg');
+  }
+
   [feature = 'amenity_compressed_air'][zoom >= 15] {
     marker-file: url('symbols/osmandapp/amenity/compressed_air.svg');
     marker-fill: @bicycle-amenity;
@@ -324,12 +330,7 @@
     [information = 'board'] {
       marker-file: url('symbols/openstreetmap-carto/tourism/board.svg');
     }
-    [information = 'guidepost'] {
-      marker-file: url('symbols/openstreetmap-carto/tourism/guidepost.svg');
-      [bicycle = 'yes'], [mtb = 'yes'] {
-        marker-fill: @bicycle-rental;
-      }
-    }
+
     [information = 'office'] {
       marker-file: url('symbols/openstreetmap-carto/tourism/office.svg');
       marker-fill: @amenity-common;
@@ -1491,6 +1492,7 @@
 		text-placement: interior;
 	}
 
+  [feature = 'tourism_information'][information='guidepost'][hiking!='no'][zoom>=16],
   [feature = 'tourism_viewpoint'][zoom >= 16],
   [feature = 'amenity_community_centre'][zoom >= 18] {
     text-name: "[name]";
@@ -1499,7 +1501,7 @@
     text-line-spacing: @standard-line-spacing-size;
     text-fill: @amenity-common;
     [feature = 'natural_volcano'] { text-fill: #b10000; }
-    text-dy: 7;
+    text-dy: 10;  // smaller value will cause overlap for guidepost
     [feature = 'tourism_viewpoint'] { text-dy: 12; }
     [feature = 'amenity_community_centre'] { text-dy: 11; text-fill: darken(@amenity-common, 5%); }
     text-face-name: @standard-font;
@@ -1507,6 +1509,7 @@
     text-halo-fill: @standard-halo-fill;
     text-placement: point;  /* interior */
     text-placement-type: simple;
+    //text-allow-overlap: true;
 
   }
 

@@ -105,6 +105,9 @@ _parts:
   status_mtb3 : &status_mtb3
     status: on
 
+  # hiking routes
+  status_hikingroutes:  &status_hikingroutes
+    status: on
 
   status_other: &status_other
     status: on
@@ -302,7 +305,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- landuse-high
           way,
           way_area AS area,
           COALESCE(
@@ -336,7 +339,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- landuse-overlay
           way,
           COALESCE(CASE WHEN landuse = 'forest' THEN 'wood' ELSE NULL END, "natural", landuse) AS type,
           tags->'leaf_type' AS leaf_type,
@@ -412,6 +415,7 @@ Layer:
     minzoom: 14
     <<: *status_contours
 
+# not used
 - id: contours20
   class: contours
   <<: *srs-osm
@@ -453,8 +457,10 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT ST_Snaptogrid(way, 0.00028  * !scale_denominator!::real / 4) AS way, waterway AS type
-        FROM planet_osm_line
+        SELECT ST_Snaptogrid(way, 0.00028  * !scale_denominator!::real / 4) AS way, 
+           waterway AS type,
+           zfact_watersize( waterway , !scale_denominator! ) AS watersize
+        FROM planet_osm_line  -- waterway_low
         WHERE
           waterway IN ('river', 'canal')
           AND (tunnel IS NULL OR tunnel NOT IN ('yes', 'culvert'))
@@ -472,7 +478,10 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT way, waterway AS type
+        SELECT  --waterway_med
+            way, 
+            waterway AS type,
+            zfact_watersize( waterway , !scale_denominator! ) AS watersize
         FROM planet_osm_line
         WHERE
           waterway IN ('river', 'canal', 'stream')
@@ -490,7 +499,10 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT way, waterway AS type
+        SELECT --waterway_high
+            way, 
+            waterway AS type,
+            zfact_watersize( waterway , !scale_denominator! ) AS watersize
         FROM planet_osm_line
         WHERE
           waterway IN ('river', 'canal', 'stream', 'ditch', 'drain')
@@ -594,7 +606,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  --buildings
           way,
           building AS type,
           waterway
@@ -617,7 +629,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- piers-poly
           way, man_made
         FROM planet_osm_polygon
         WHERE man_made IN ('pier', 'breakwater', 'groyne')
@@ -632,7 +644,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- piers-line
           way, man_made
         FROM planet_osm_line
         WHERE man_made IN ('pier', 'breakwater', 'groyne')
@@ -647,7 +659,9 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT way, aeroway AS type
+        SELECT   -- aeroway
+            way, aeroway AS type,
+            zfact_roadsize(aeroway,!scale_denominator!) as roadsize
         FROM planet_osm_line
         WHERE aeroway IN ('runway', 'taxiway')
       ) AS data
@@ -657,6 +671,8 @@ Layer:
     <<: *status_other
 
 ############################################# tunnel , bridge , road , track/path ######################
+
+#---------- Tunnel is suppressed : replaced by attribute tunnel!='no' inside road_high
 - id: tunnel
   <<: *srs-osm
   Datasource:
@@ -685,7 +701,10 @@ Layer:
             service,
             mtb_scale,
             mtb_scale_imba,
-            tunnel
+            tunnel,
+            zfact_roadsize(type,!scale_denominator!) as roadsize,
+            zfact_roadcase(type,!scale_denominator!) as roadcase,
+            zfact_sizecycle(type,!scale_denominator!) as sizecycle
         FROM cyclosm_ways
         WHERE tunnel NOT IN ('no')
       ) AS data
@@ -693,15 +712,22 @@ Layer:
   properties:
     cache-features: true
     minzoom: 11
-    <<: *status_other
+    <<: *status_off
 
+
+
+# this one is exactly the same than turning_circle_fill
+# perhaps the goal is to have 3 steps of drawing :  turning_circle_case / roads / turning_circle_fill
 - id: turning_circle_case
   <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT way
+        SELECT  -- turning_circle_case
+            way,
+            zfact_roadsize(highway,!scale_denominator!) as roadsize,
+            zfact_roadcase(highway,!scale_denominator!) as roadcase
         FROM planet_osm_point
         WHERE highway = 'turning_circle'
       ) AS data
@@ -716,17 +742,40 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT --leisure_track
           way,
-          sport
+          sport,
+          zfact_roadsize('track' ,!scale_denominator!) as roadsize,
+          zfact_sizecycle('' ,!scale_denominator!) as sizecycle
         FROM planet_osm_line
         WHERE leisure = 'track'
       ) AS data
   geometry: linestring
   properties:
     cache-features: true
-    minzoom: 11
+    minzoom: 13
     <<: *status_other
+
+# draw hiking routes before roads, to avoid changing the color of roads ...
+- id: hiking_routes
+  <<: *srs-osm
+  Datasource:
+    <<: *osm2pgsql
+    table: |-
+      (
+        SELECT -- hiking_routes
+            way, highway, route, tags->'network' AS network
+        FROM planet_osm_line
+        WHERE 
+            route='hiking' 
+            AND tags->'network' IN ('lwn', 'rwn' , 'nwn' , 'iwn' )
+
+      ) AS data
+  geometry: linestring
+  properties:
+    minzoom: 15
+    <<: *status_hikingroutes
+
 
 - id: roads_low
   <<: *srs-osm
@@ -734,26 +783,34 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-          SELECT
-            ST_Snaptogrid(way, 0.00028  * !scale_denominator!::real / 4) AS way,
-            COALESCE(
-              highway,
-              CASE
-                WHEN railway IN ('rail') THEN 'railway'
-                ELSE 'other'
-              END
-            ) AS type,
-            bridge,
-            tunnel,
-            bicycle
-          FROM planet_osm_roads
-          WHERE ((railway IN ('rail') AND (service IS NULL OR service NOT IN ('spur', 'siding', 'yard')))
-              OR highway IN ('motorway', 'trunk'))
-            AND way && !bbox!
-          ORDER BY CASE
-            WHEN railway IS NOT NULL THEN 0
-            WHEN highway IS NOT NULL THEN 1
-          END DESC
+          SELECT  -- roads_low
+              *,
+               zfact_roadsize(type,!scale_denominator!) as roadsize
+          FROM
+              (
+              SELECT  -- roads_low
+                ST_Snaptogrid(way, 0.00028  * !scale_denominator!::real / 4) AS way,
+                COALESCE(
+                  highway,
+                  CASE
+                    WHEN railway IN ('rail') THEN 'railway'
+                    ELSE 'other'
+                  END
+                ) AS type,
+
+                bridge,
+                tunnel,
+                bicycle
+              FROM planet_osm_roads
+              WHERE ((railway IN ('rail') AND (service IS NULL OR service NOT IN ('spur', 'siding', 'yard')))
+                  OR highway IN ('motorway', 'trunk'))
+                AND way && !bbox!
+              ORDER BY CASE
+                WHEN railway IS NOT NULL THEN 0
+                WHEN highway IS NOT NULL THEN 1
+              END DESC
+              ) AS tmp
+             
       ) AS data
   geometry: linestring
   properties:
@@ -768,34 +825,42 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
-          ST_Snaptogrid(way, 0.00028  * !scale_denominator!::real / 4) AS way,
-          COALESCE(
-            highway,
-            CASE
-              WHEN railway IN ('rail') THEN 'railway'
-              ELSE 'other'
-            END
-          ) AS type,
-          CASE
-            WHEN bicycle IN ('no', 'private', 'use_sidepath') THEN 'no'
-            WHEN bicycle IS NOT NULL THEN bicycle
-            WHEN tags->'motorroad' IN ('yes') THEN 'no'
-            WHEN highway NOT IN ('motorway', 'motorway_link') AND tags->'vehicle' IN ('no', 'private') THEN 'no'
-            WHEN highway NOT IN ('motorway', 'motorway_link') AND tags->'vehicle' IS NOT NULL THEN tags->'vehicle'
-            WHEN highway NOT IN ('motorway', 'motorway_link') AND access IN ('no', 'private') THEN 'no'
-            WHEN highway NOT IN ('motorway', 'motorway_link') AND access IS NOT NULL THEN access
-            ELSE NULL
-          END AS can_bicycle
-        FROM planet_osm_roads
-        WHERE (((railway IN ('rail') AND (service IS NULL OR service NOT IN ('spur', 'siding', 'yard')))
-            OR highway IN ('motorway', 'trunk', 'primary' )))
-          AND way && !bbox!
-        ORDER BY CASE
-          WHEN railway IS NOT NULL THEN 0
-          WHEN highway IS NOT NULL THEN 1
-        END DESC
-      ) AS data
+          SELECT  -- roads_med
+              *,
+               zfact_roadsize(type,!scale_denominator!) as roadsize
+          FROM
+                (
+                SELECT  -- roads_med
+                  ST_Snaptogrid(way, 0.00028  * !scale_denominator!::real / 4) AS way,
+                  COALESCE(
+                    highway,
+                    CASE
+                      WHEN railway IN ('rail') THEN 'railway'
+                      ELSE 'other'
+                    END
+                  ) AS type,
+                  CASE
+                    WHEN bicycle IN ('no', 'private', 'use_sidepath') THEN 'no'
+                    WHEN bicycle IS NOT NULL THEN bicycle
+                    WHEN tags->'motorroad' IN ('yes') THEN 'no'
+                    WHEN highway NOT IN ('motorway', 'motorway_link') AND tags->'vehicle' IN ('no', 'private') THEN 'no'
+                    WHEN highway NOT IN ('motorway', 'motorway_link') AND tags->'vehicle' IS NOT NULL THEN tags->'vehicle'
+                    WHEN highway NOT IN ('motorway', 'motorway_link') AND access IN ('no', 'private') THEN 'no'
+                    WHEN highway NOT IN ('motorway', 'motorway_link') AND access IS NOT NULL THEN access
+                    ELSE NULL
+                  END AS can_bicycle
+
+                FROM planet_osm_roads
+                WHERE (((railway IN ('rail') AND (service IS NULL OR service NOT IN ('spur', 'siding', 'yard')))
+                    OR highway IN ('motorway', 'trunk', 'primary' )))
+                  AND way && !bbox!
+                ORDER BY CASE
+                  WHEN railway IS NOT NULL THEN 0
+                  WHEN highway IS NOT NULL THEN 1
+                END DESC
+                ) AS tmp
+
+          ) AS data
   geometry: linestring
   properties:
     minzoom: 9
@@ -809,7 +874,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT -- roads_high
             way,
             type,
             alpine,
@@ -831,13 +896,22 @@ Layer:
             service,
             mtb_scale,
             mtb_scale_imba,
-            ROUND (!scale_denominator!::real) as zscale   -- get  the current scale 
+            tunnel,
+            bridge,
+            ROUND (!scale_denominator!::real) as zscale ,   -- get  the current scale
+            zfact_roadsize(type,!scale_denominator!) as roadsize,
+            zfact_roadcase(type,!scale_denominator!) as roadcase,
+            zfact_sizecycle(type,!scale_denominator!) as sizecycle
         FROM cyclosm_ways
-        WHERE (tunnel IS NULL OR tunnel = 'no')
-          AND (bridge IS NULL OR bridge = 'no')
-          -- eliminate track if AND zoom < 13 ( scale=68000 )
-          -- eliminate path  if AND zoom < 14 ( scale=34000 )
-          AND NOT (  type='track' AND ROUND (!scale_denominator!::real)  > 80000   OR type='path' AND ROUND (!scale_denominator!::real)  > 40000 )
+        WHERE 
+          ( 
+               type IN ('motorway','primary','secondary' )
+            OR type IN ('motorway_link','primary_link','secondary_link','tertiary','tertiary_link','unclassified','cycleway') AND !scale_denominator!::real < 200000  -- zoom >=12
+            OR type = 'service' AND service != 'minor' AND !scale_denominator!::real < 200000  -- zoom >=12
+            OR type IN ('track','bridleway','footway') AND  !scale_denominator!::real < 100000 -- zoom >=13
+            OR !scale_denominator!::real < 50000 -- zoom >=14
+          )
+
       ) AS data
   geometry: linestring
   properties:
@@ -847,14 +921,16 @@ Layer:
 
 
 
-
+#--------------------- draw turning circles a second time, after road drawing
 - id: turning_circle_fill
   <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT way
+        SELECT  -- turning_circle_fill
+            way,
+            zfact_roadsize(highway,!scale_denominator!) as roadsize
         FROM planet_osm_point
         WHERE highway = 'turning_circle'
       ) AS data
@@ -870,7 +946,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- aerialways
           way,
           aerialway,
           name,
@@ -886,6 +962,7 @@ Layer:
     minzoom: 12
     <<: *status_other
 
+#--------- Bridge is suppressed : replaced by attribute bridge!='no' inside road_high
 - id: bridge
   <<: *srs-osm
   Datasource:
@@ -914,7 +991,10 @@ Layer:
             service,
             mtb_scale,
             mtb_scale_imba,
-            bridge
+            bridge,
+            zfact_roadsize(type,!scale_denominator!) as roadsize,
+            zfact_roadcase(type,!scale_denominator!) as roadcase,
+            zfact_sizecycle(type,!scale_denominator!) as sizecycle
         FROM cyclosm_ways
         WHERE bridge NOT IN ('no')
       ) AS data
@@ -922,7 +1002,8 @@ Layer:
   properties:
     cache-features: true
     minzoom: 11
-    <<: *status_other
+    <<: *status_off
+
 
 ############################### administrative boundaries #####################
 - id: admin-low
@@ -931,7 +1012,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT   -- admin-low
           way,
           admin_level
         FROM planet_osm_roads
@@ -945,13 +1026,13 @@ Layer:
     maxzoom: 10
     <<: *status_other
 
-- id: admin-mid
+- id: admin-mid   
   geometry: linestring
   <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- admin-mid
           way,
           admin_level
         FROM planet_osm_roads
@@ -965,13 +1046,13 @@ Layer:
     maxzoom: 12
     <<: *status_other
 
-- id: admin-high
+- id: admin-high  
   geometry: linestring
   <<: *srs-osm
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- admin-high
           way,
           admin_level
         FROM planet_osm_roads
@@ -991,7 +1072,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- ferry-routes
           way,
           bicycle
         FROM planet_osm_line
@@ -1008,7 +1089,8 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT ST_Simplify(way, 0.00028  * !scale_denominator!::real/4, TRUE) AS way, route, tags->'network' AS type, tags->'state' AS state
+        SELECT -- bicycle_routes_gen0
+            ST_Simplify(way, 0.00028  * !scale_denominator!::real/4, TRUE) AS way, route, tags->'network' AS type, tags->'state' AS state
         FROM planet_osm_line
         WHERE (route='bicycle' OR route='mtb')
           AND tags->'network'='icn'
@@ -1027,7 +1109,8 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT ST_Simplify(way, 0.00028  * !scale_denominator!::real/4, TRUE) AS way, route, tags->'network' AS type, tags->'state' AS state
+        SELECT   -- bicycle_routes_gen1
+            ST_Simplify(way, 0.00028  * !scale_denominator!::real/4, TRUE) AS way, route, tags->'network' AS type, tags->'state' AS state
         FROM planet_osm_line
         WHERE (route='bicycle' OR route='mtb')
           AND tags->'network' IN ('icn', 'ncn')
@@ -1049,7 +1132,8 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT ST_Simplify(way, 0.00028  * !scale_denominator!::real/4, TRUE) AS way, route, tags->'network' AS type, tags->'state' AS state
+        SELECT  -- bicycle_routes_gen2
+            ST_Simplify(way, 0.00028  * !scale_denominator!::real/4, TRUE) AS way, route, tags->'network' AS type, tags->'state' AS state
         FROM planet_osm_line
         WHERE (route='bicycle' OR route='mtb')
           AND tags->'network' IN ('icn', 'ncn', 'rcn')
@@ -1073,28 +1157,30 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT * FROM (
-          SELECT
-            way,
-            COALESCE(tags->'network', 'lcn') AS type,
-            tags->'state' AS state,
-            CASE
-              WHEN tags->'network' = 'icn' THEN 0
-              WHEN tags->'network' = 'ncn' THEN 1
-              WHEN tags->'network' = 'rcn' THEN 2
-              WHEN tags->'network' = 'lcn' THEN 3
-              ELSE 4
-            END as priority
-          FROM planet_osm_line
-          WHERE route='bicycle'
-          UNION ALL
-          SELECT way, 'lcn' as type, tags->'lcn' AS state, 4 as priority
-          FROM planet_osm_line
-          WHERE tags->'lcn' IS NOT NULL AND tags->'lcn' NOT IN ('no', 'none')
-            AND highway IS NOT NULL
-        ) as routes_from_relations_and_ways
-        ORDER BY priority DESC
-      ) AS data
+        SELECT -- bicycle_routes_bicycle_gen3
+           * 
+            FROM (
+              SELECT 
+                way,
+                COALESCE(tags->'network', 'lcn') AS type,
+                tags->'state' AS state,
+                CASE
+                  WHEN tags->'network' = 'icn' THEN 0
+                  WHEN tags->'network' = 'ncn' THEN 1
+                  WHEN tags->'network' = 'rcn' THEN 2
+                  WHEN tags->'network' = 'lcn' THEN 3
+                  ELSE 4
+                END as priority
+              FROM planet_osm_line
+              WHERE route='bicycle'
+              UNION ALL
+              SELECT way, 'lcn' as type, tags->'lcn' AS state, 4 as priority
+              FROM planet_osm_line
+              WHERE tags->'lcn' IS NOT NULL AND tags->'lcn' NOT IN ('no', 'none')
+                AND highway IS NOT NULL
+            ) as routes_from_relations_and_ways
+            ORDER BY priority DESC
+          ) AS data
   geometry: linestring
   properties:
     minzoom: 11
@@ -1106,7 +1192,8 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT way, route, COALESCE(tags->'network', 'lcn') AS type, tags->'state' AS state
+        SELECT -- bicycle_routes_mtb_gen3
+            way, route, COALESCE(tags->'network', 'lcn') AS type, tags->'state' AS state
         FROM planet_osm_line
         WHERE route='mtb'
         ORDER BY CASE
@@ -1121,6 +1208,9 @@ Layer:
   properties:
     minzoom: 13
     <<: *status_mtb3
+
+
+
 
 ############################### gpx route #######################
 - id: route
@@ -1140,7 +1230,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- power-minorline
           way
         FROM planet_osm_line
         WHERE power = 'minor_line'
@@ -1155,7 +1245,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- power-line
           way
         FROM planet_osm_line
         WHERE power = 'line'
@@ -1172,7 +1262,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- protected-areas
           way,
           name,
           boundary,
@@ -1196,7 +1286,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- trees
           way,
           "natural"
         FROM planet_osm_point
@@ -1219,7 +1309,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- barriers_line
           way, COALESCE(historic, barrier) AS feature
         FROM
           (SELECT way,
@@ -1259,7 +1349,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- cycle-junction-nodes
           way,
           RIGHT(
             COALESCE(tags->'icn_ref', tags->'ncn_ref', tags->'rcn_ref', tags->'lcn_ref'),
@@ -1290,7 +1380,8 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT way, "natural", man_made
+        SELECT -- cliffs
+            way, "natural", man_made
         FROM planet_osm_line
         WHERE "natural" = 'cliff' OR man_made = 'embankment'
       ) AS data
@@ -1308,7 +1399,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- capital-names
           way,
           name,
           CASE
@@ -1337,7 +1428,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- country-names
           way,
           way_area/NULLIF(0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real,0) AS way_pixels,
           name
@@ -1354,7 +1445,8 @@ Layer:
     <<: *status_on
 
 # disabled ! It prevents big towns from being shown correctly
-# For France, zoom=6 in openstreetmap , causes Lyon to be replaced by Villeurbanne ! (probably because Lyon overlapps with the regional name)
+# For France, zoom=6 in openstreetmap (nov2024) , causes Lyon to be replaced by Villeurbanne ! 
+# (probably because Lyon overlapps with the regional name)
 - id: state-names
   class: state
   geometry: point
@@ -1362,7 +1454,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- state-names
           way,
           way_area/NULLIF(0.00028  * !scale_denominator!::real*0.00028  * !scale_denominator!::real,0) AS way_pixels,
           name,
@@ -1386,7 +1478,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- placenames-medium
           way,
           CONCAT ( ' ' , name, ' ' ) AS name,   -- adding blanks seems to avoid troubles when text reaches tile boundaries
           score,
@@ -1442,7 +1534,8 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT *, ROW_NUMBER() OVER () AS row_number
+        SELECT -- placenames-small
+            *, ROW_NUMBER() OVER () AS row_number
         FROM (
           SELECT
 
@@ -1491,7 +1584,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- ferry-routes-text
           way,
           name
         FROM planet_osm_line
@@ -1511,7 +1604,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- admin-text
           way,
           name,
           admin_level,
@@ -1534,7 +1627,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- protected-areas-text
           way,
           name,
           boundary,
@@ -1557,7 +1650,8 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT way, route, tags->'network' AS type, ref, name, 1 as height, char_length(ref) AS width
+        SELECT  -- bicycle_routes_labels
+            way, route, tags->'network' AS type, ref, name, 1 as height, char_length(ref) AS width
         FROM planet_osm_line
         WHERE (route = 'bicycle' OR route = 'mtb')
           AND (ref IS NOT NULL OR name IS NOT NULL)
@@ -1574,7 +1668,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- train_stations
           way,
           type,
           name,
@@ -1621,7 +1715,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- oriented-highway-amenities
           osm_id,
           feature,
           ST_GeometryN(st_union(way),1) as way, max(angle)-min(angle) as angle_diff,
@@ -1682,9 +1776,10 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- amenities-poly
           access,
           bicycle,
+          hiking,
           mtb,
           covered,
           shelter,
@@ -1741,7 +1836,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- amenities-line
           way,
           COALESCE(
             'highway_' || CASE WHEN tags @> 'ford=>yes' OR tags @> 'ford=>stepping_stones' THEN 'ford' END
@@ -1766,7 +1861,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT -- clpc
           CASE
             WHEN members[array_position(members, CONCAT('w', h1.osm_id)) + 1] = 'from' THEN
               ST_Intersection(
@@ -1822,7 +1917,7 @@ Layer:
   Datasource:
     <<: *osm2pgsql
     table: |-
-      (SELECT
+      (SELECT  -- power-towers
           way,
           power
       FROM planet_osm_point
@@ -1881,7 +1976,8 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT way, waterway AS type, name
+        SELECT  -- waterway_label
+            way, waterway AS type, name
         FROM planet_osm_line
         WHERE
           waterway IN ('canal', 'river', 'stream')
@@ -1899,7 +1995,8 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT barrier, way, z_order
+        SELECT   -- barriers
+            barrier, way, z_order
         FROM planet_osm_point
         WHERE barrier IN ('block', 'bollard', 'cattle_grid', 'chain', 'cycle_barrier', 'gate', 'jersey_barrier', 'kissing_gate', 'lift_gate', 'log', 'motorcycle_barrier', 'planter', 'stile', 'swing_gate', 'turnstile')
         ORDER BY z_order NULLS LAST
@@ -1915,9 +2012,10 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- amenities-poly-text
           way,
           feature,
+          hiking,
           access,
           capacity,
           name,
@@ -1929,7 +2027,7 @@ Layer:
       ) AS data
   geometry: polygon
   properties:
-    minzoom: 14
+    minzoom: 15
     <<: *status_amenities
 
 # Dedicated layer for peak/saddle,cave
@@ -1943,7 +2041,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- mountain-point-text
           way,
           "natural",
           elevation,
@@ -1968,7 +2066,12 @@ Layer:
                 END AS elevation,
                 name
             FROM planet_osm_point
-            WHERE name IS NOT NULL   AND ( "natural" IN ( 'saddle' ,'peak' , 'volcano' ,'cave_entrance' )   )        
+            WHERE 
+                name IS NOT NULL   
+                AND  ( 
+                     "natural" IN ( 'saddle' ,'peak' , 'volcano' ,'cave_entrance' ) 
+
+                     )        
          ) AS zzz
       ) AS data
   geometry: point
@@ -1982,7 +2085,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- mountain-poly-text
           way,
           "natural",
           tourism,
@@ -2002,9 +2105,10 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT -- amenities-points-text
           way,
           feature,
+          hiking,
           access,
           capacity,
           CONCAT(
@@ -2021,7 +2125,7 @@ Layer:
       ) AS data
   geometry: point
   properties:
-    minzoom: 14
+    minzoom: 15
     <<: *status_amenities
 
 - id: highway_area_label
@@ -2030,7 +2134,8 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT highway AS type, name, way_area AS area, ST_PointOnSurface(way) AS way
+        SELECT   -- highway_area_label
+            highway AS type, name, way_area AS area, ST_PointOnSurface(way) AS way
         FROM planet_osm_polygon
         WHERE name IS NOT NULL AND highway IS NOT NULL
           AND way && !bbox!
@@ -2047,7 +2152,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- roads-text-ref-low-zoom
           way,
           highway,
           height,
@@ -2103,7 +2208,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- roads-text-ref
           way,
           highway,
           height,
@@ -2162,7 +2267,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- roads-text-name
           way,
           CASE
             WHEN substr(type, length(type)-4, 5) = '_link' THEN substr(type, 0, length(type)-4)
@@ -2219,7 +2324,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- paths-text-name
           way,
           highway,
           COALESCE(name, tags->'mtb:name') AS name,
@@ -2246,7 +2351,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- roads-text-conditional
           way,
           highway,
           TRIM(
@@ -2288,7 +2393,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- addresses
           way,
           "addr:housenumber" AS addr_housenumber,
           "addr:housename" AS addr_housename,
@@ -2328,7 +2433,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- military-overlay
           way,
           landuse,
           military,
@@ -2353,7 +2458,7 @@ Layer:
     <<: *osm2pgsql
     table: |-
       (
-        SELECT
+        SELECT  -- legend-icons
           way,
           tags->'icon' AS icon,
           tags->'label' AS label

@@ -10,6 +10,9 @@ TIREX=tirex
 # project.mml directory
 STYLE=style
 
+# database name
+DB_OSM=osm
+
 # since this script is run by root, and not by user=1000 , forces created files/dir to be rw
 umask 0000
 
@@ -33,6 +36,22 @@ LEAFLET=$TIREX/html/leaflet
 [ -L $LEAFLET ] || ln -s /usr/share/javascript/leaflet $LEAFLET
 
  
+#############################################################
+# function to create the needed views
+# must be called before running Kosmtik or Tirex, in case some features have been modified
+#
+############################################################
+CreateViewsFunctions()
+{
+
+  echo "\nRun cyclosm-specific sql script to create some views"
+  psql --dbname=$DB_OSM --file=$STYLE/views.sql
+
+  # create specific sql file for road sizes
+  bash scripts/zfact.sh $STYLE $DB_OSM
+
+}
+
 
 
 ######################### just exec bash ######################
@@ -52,6 +71,9 @@ then
 fi
 
 ######################### standard operation  ######################
+
+# create Views/Functions
+CreateViewsFunctions
 
 echo ""
 echo "=============== generate XML ==============="

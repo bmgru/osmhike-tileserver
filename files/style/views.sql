@@ -149,9 +149,11 @@ CREATE VIEW cyclosm_ways AS
 
         -- alpine difficulty
         CASE
-            WHEN tags->'sac_scale' IN ( 'demanding_mountain_hiking' , 'alpine_hiking') THEN 'medium'
-            WHEN tags->'sac_scale' IN ( 'demanding_alpine_hiking','difficult_alpine_hiking') THEN 'high'
-            ELSE ''
+            WHEN tags->'sac_scale' IN ( 'mountain_hiking' ) THEN 'low'
+            WHEN tags->'sac_scale' IN ( 'demanding_mountain_hiking') THEN 'medium'
+            WHEN tags->'sac_scale' IN ( 'alpine_hiking' ) THEN 'high'
+            WHEN tags->'sac_scale' IN ( 'demanding_alpine_hiking','difficult_alpine_hiking') THEN 'veryhigh'
+            ELSE 'no'
         END AS alpine,
 
         -- cycling difficulty:  unknown road cyclocross mtb
@@ -198,11 +200,17 @@ CREATE VIEW cyclosm_ways AS
             WHEN highway IN ('path', 'footway', 'pedestrian', 'bridleway') THEN CASE WHEN layer~E'^\\d+$' THEN 100*layer::integer+198 ELSE 198 END
             ELSE z_order
         END AS z_order,
+        -- osmhike: bridge replace NULL by no
+        COALESCE(
         bridge,
+        'no'
+        ) AS bridge,
+        -- osmhike: tunnel replace NULL by no
         COALESCE(
             tunnel,
             covered,
-            tags->'indoor'
+            tags->'indoor',
+            'no'
         ) AS tunnel
     FROM planet_osm_line
     WHERE railway IN ('light_rail', 'subway', 'narrow_gauge', 'rail', 'tram')
@@ -260,6 +268,7 @@ CREATE VIEW cyclosm_amenities_point AS
           tags->'memorial' AS memorial,
           tags->'castle_type' AS castle_type,
           tags->'information' AS information,
+          tags->'hiking' AS hiking,           -- Osmhike
           tags->'artwork_type' as artwork_type,
           tags->'icao' as icao,
           tags->'iata' as iata,
@@ -416,6 +425,7 @@ CREATE VIEW cyclosm_amenities_poly AS
           tags->'memorial' AS memorial,
           tags->'castle_type' AS castle_type,
           tags->'information' AS information,
+          tags->'hiking' AS hiking,           -- Osmhike
           tags->'artwork_type' as artwork_type,
           tags->'icao' as icao,
           tags->'iata' as iata,

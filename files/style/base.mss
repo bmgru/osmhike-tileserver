@@ -159,10 +159,7 @@
       line-cap: round;
       line-join: round;
       line-color: @bicycle-amenity;
-      line-width: 0.2 * @rdz15_cycle;
-      [zoom>=16] { line-width: 0.4 * @rdz16_cycle; }
-      [zoom>=17] { line-width: 0.5 * @rdz17_cycle; }
-      [zoom>=18] { line-width: 0.6 * @rdz18_cycle; }
+
     }
   }
   [type='amenity_university']    { polygon-fill: @school; }
@@ -178,24 +175,12 @@
     outline/line-cap: round;
     outline/line-join: round;
     outline/line-color: @track * 0.95;
-    outline/line-width: 1 + @rdz12_track;
-    [zoom>=13] { outline/line-width: 1 + @rdz13_track; }
-    [zoom>=14] { outline/line-width: 1 + @rdz14_track; }
-    [zoom>=15] { outline/line-width: 1 + @rdz15_track; }
-    [zoom>=16] { outline/line-width: 1 + @rdz16_track; }
-    [zoom>=17] { outline/line-width: 1 + @rdz17_track; }
-    [zoom>=18] { outline/line-width: 1 + @rdz18_track; }
+    outline/line-width: 1 + [roadsize];
 
     line-cap: round;
     line-join: round;
     line-color: @track;
-    line-width: @rdz12_track;
-    [zoom>=13] { line-width: @rdz13_track; }
-    [zoom>=14] { line-width: @rdz14_track; }
-    [zoom>=15] { line-width: @rdz15_track; }
-    [zoom>=16] { line-width: @rdz16_track; }
-    [zoom>=17] { line-width: @rdz17_track; }
-    [zoom>=18] { line-width: @rdz18_track; }
+    line-width: [roadsize] ;
   }
 
   // larger because will contain cycleway line
@@ -203,26 +188,19 @@
   [sport='bmx'][zoom>=15] {
     ::area {
       outline/line-opacity: 0;
-      outline/line-width: 1 + 4*@rdz15_cycle;
-      [zoom>=16] { outline/line-width: 1 + 4*@rdz16_cycle; }
-      [zoom>=17] { outline/line-width: 1 + 4*@rdz17_cycle; }
-      [zoom>=18] { outline/line-width: 1 + 4*@rdz18_cycle; }
+      outline/line-width: 1 + 4*[sizecycle];
+
 
       line-color: @bicycle-leisure-track-fill;
-      line-width: 4*@rdz15_cycle;
-      [zoom>=16] { line-width: 4*@rdz16_cycle; }
-      [zoom>=17] { line-width: 4*@rdz17_cycle; }
-      [zoom>=18] { line-width: 4*@rdz18_cycle; }
+      line-width: 4*[sizecycle];
     }
 
     ::cycleway {
       line-cap: round;
       line-join: round;
       line-color: @bicycle-amenity;
-      line-width: 0.2 * @rdz15_cycle;
-      [zoom>=16] { line-width: 0.4 * @rdz16_cycle; }
-      [zoom>=17] { line-width: 0.5 * @rdz17_cycle; }
-      [zoom>=18] { line-width: 0.6 * @rdz18_cycle; }
+      line-width: 0.2 * [sizecycle];
+
     }
   }
 }
@@ -292,57 +270,29 @@ Map { background-color: @water; }
 
 #waterway_low[zoom>=8][zoom<=12] {
   line-color: @water;
-  [zoom=8] { line-width: 0.1; }
-  [zoom=9] { line-width: 0.2; }
-  [zoom=10]{ line-width: 0.4; }
-  [zoom=11]{ line-width: 0.6; }
-  [zoom=12]{ line-width: 0.8; }
+  line-width: [watersize];
 }
 
 #waterway_med[zoom>=13][zoom<=14] {
   line-color: @water;
-  [type='river'],
-  [type='canal'] {
+  line-width: [watersize];
+
+  [type='river'], [type='canal'] {
     line-cap: round;
     line-join: round;
-    [zoom=13]{ line-width: 1; }
-    [zoom=14]{ line-width: 1.5; }
   }
-  [type='stream'] {
-    [zoom=13]{ line-width: 0.2; }
-    [zoom=14]{ line-width: 0.4; }
-  }
+
 }
 
 #waterway_high[zoom>=15] {
   line-color: @water;
-  [type='river'],
-  [type='canal'] {
+  line-width: [watersize];
+
+  [type='river'], [type='canal'] {
     line-cap: round;
     line-join: round;
-    [zoom=15]{ line-width: 2; }
-    [zoom=16]{ line-width: 3; }
-    [zoom=17]{ line-width: 4; }
-    [zoom=18]{ line-width: 5; }
-    [zoom=19]{ line-width: 6; }
-    [zoom>19]{ line-width: 7; }
   }
-  [type='stream'] {
-    [zoom=15]{ line-width: 0.6; }
-    [zoom=16]{ line-width: 0.8; }
-    [zoom=17]{ line-width: 1; }
-    [zoom=18]{ line-width: 1.5; }
-    [zoom>18]{ line-width: 2; }
-  }
-  [type='ditch'],
-  [type='drain'] {
-    [zoom=15]{ line-width: 0.1; }
-    [zoom=16]{ line-width: 0.3; }
-    [zoom=17]{ line-width: 0.5; }
-    [zoom=18]{ line-width: 0.7; }
-    [zoom=19]{ line-width: 1; }
-    [zoom>19]{ line-width: 1.5; }
-  }
+
 }
 
 #piers-poly, #piers-line {
@@ -397,30 +347,30 @@ Map { background-color: @water; }
   #contours50 {
     [zoom >= 11] { line-width: 0.2; }
     [zoom >= 13] { line-width: 0.3; }
-    [zoom >= 14] { line-width: 0.4; line-smooth: 0.5; }
-    [zoom >= 16] { line-width: 0.8; line-smooth: 0.5; }
+    [zoom >= 14] { line-width: 0.4;  }
+    [zoom >= 16] { line-width: 0.8;  }
 
 
   }
 
   /* 20 m */
   #contours20 {
-    [zoom >= 12] { line-width: 0.2; line-smooth: 0.5; }
+    [zoom >= 12] { line-width: 0.2;  }
     [zoom >= 16] { line-width: 0.4; }
   }
 
   /* 10m */
   #contours10 {
-    [zoom >= 13] { line-width: 0.2; line-smooth: 0.5; }
+    [zoom >= 13] { line-width: 0.2; }
     [zoom >= 16] { line-width: 0.4; }
   }
 
   /* All labels */
 
 
-  #contours100{
+  #contours100[zoom >= 14],
+  #contours50[zoom >= 16] {
 
-  [zoom >= 14] { 
       text-face-name: @standard-font;
       text-size: @contours-larger-font-size;
       text-fill: @contours-fill;
@@ -432,29 +382,10 @@ Map { background-color: @water; }
       text-min-path-length: @contours-min-path-length;
       text-max-char-angle-delta: @contours-max-char-angle-delta;
       text-name: "[ele]";
-      }
    
   }
 
-  #contours50{
-
-    [zoom >= 16] { 
-      text-face-name: @standard-font;
-      text-size: @contours-larger-font-size;
-      text-fill: @contours-fill;
-      text-halo-radius: 1;
-      text-halo-fill: @contours-halo-fill;
-      text-placement: line;
-      text-label-position-tolerance: @contours-position-tolerance;
-      text-spacing: @contours-spacing;
-      text-min-path-length: @contours-min-path-length;
-      text-max-char-angle-delta: @contours-max-char-angle-delta;
-      text-name: "[ele]";
-      }
-   
-  }
-
-
+  
 }
 
 /* ---- CLIFFS ---- */
