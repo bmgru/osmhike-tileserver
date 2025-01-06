@@ -1,0 +1,4 @@
+https://github.com/bmgru/osmhike-tileserver/blob/master/README.md
+https://raw.githubusercontent.com/bmgru/osmhike-tileserver/refs/heads/master/tutorial.pdf
+https://raw.githubusercontent.com/bmgru/osmhike-tileserver/refs/heads/master/README.md
+https://github.com/bmgru/osmhike-tileserver
