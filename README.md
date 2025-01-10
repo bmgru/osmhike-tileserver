@@ -14,8 +14,10 @@ Three goals:
 
 Designed for Linux. 
 The Docker infrastructure must be installed ( see mini-guide in tutorial  )
+Optimized for 8GB memory. If you have only 4GB, modify dbconf/myconf.conf
 
 People stuck on Windows, might try the WSL feature of Windows, which allows to run Linux inside Windows...
+It has been tested on a 8GB memory Windows10 PC, allowing 4GB for WSL.
 
 ## Installation
 
@@ -75,6 +77,7 @@ Generate contours lines  ( note the usage of RUN command with argument )
 ```
 sudo docker-compose run import contours
 ```
+*Note: The download speed from viewfinderpanoramas may be incredibly slow at some moments. It seems it works better when Americans are spleeping...*
 
 Generate hillshade  ( note the usage of RUN command with argument )
 ```
