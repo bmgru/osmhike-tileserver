@@ -53,9 +53,9 @@ Build "import" image ( the osm data import tool )
 sudo docker-compose build import
 ```
 
-Build "kosmtik" image ( the tile rendering and web server )
+Build "tirex" image ( the tile rendering and web server )
 ```
-sudo docker-compose build kosmtik
+sudo docker-compose build tirex
 ```
 
 ## Launching the demo based on Andorra data
@@ -84,9 +84,9 @@ Generate hillshade  ( note the usage of RUN command with argument )
 sudo docker-compose run import hillshade
 ```
 
-Launch the tiles web server.  Note: the first time, kosmtik may spend many minutes to download shapefiles from Internet...
+Launch the tiles web server.  Note: the first time, it may spend many minutes to download shapefiles from Internet...
 ```
-sudo docker-compose up -V kosmtik
+sudo docker-compose up -V tirex
 ```
 
 Navigate in the map : open a browser on the below url , and move the map until you see Andorra
@@ -95,7 +95,7 @@ http://localhost:8888
 ```
 
 
-To stop kosmtik, just type CTRL/C in its window<br>
+To stop the tile server, just type CTRL/C in its window<br>
 To stop the database, use:  sudo docker-compose stop db
 
 Note:
