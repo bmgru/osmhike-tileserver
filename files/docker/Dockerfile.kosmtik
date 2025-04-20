@@ -20,12 +20,8 @@ RUN apt update && \
 # Install of Kosmtik 
 # Note: Ubuntu sets npm prefix to /usr/local, which breaks the install of plugins . So we must explicitely force it to /usr
 #       with ubuntu:noble, the command for doing this is  "npm config set prefix /usr" 
-# Note: we are obliged to take the latest version from repository, because  with ubuntu:noble, the version tagged "0.0.17"  will fail due to troubles with some nodejs components
-RUN npm config set prefix /usr && cd /tmp && git clone  https://github.com/kosmtik/kosmtik.git && cd /tmp/kosmtik  && npm install -g
-
-# This attempt with tagged version 0.0.17 WILL NOT WORK, due to troubles with some nodejs components
-# cd /tmp && git clone --branch 0.0.17 --single-branch https://github.com/example/repo.git
-#RUN npm config set prefix /usr && cd /tmp/kosmtik  &&  npm install -g
+# Note: We use the latest commit that has been tested to work. The offical tags are several years out of date.
+RUN npm config set prefix /usr && cd /tmp && git clone https://github.com/kosmtik/kosmtik.git && cd /tmp/kosmtik && git checkout 4472463781c8b252920db3720ab7006734478ff0 && npm install -g
 
 # Execution of Kosmtik to install plugins
 WORKDIR /usr/lib/node_modules/kosmtik/
