@@ -134,10 +134,6 @@ sudo docker-compose run  import hillshade
 
 ## Hints ##
 
-Force Kosmtik to produce the .xml file, used by Mapnik
-```
-sudo docker-compose run  kosmtik xml
-```
 
 Execute psql to navigate into database
 ```
