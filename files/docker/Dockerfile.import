@@ -5,7 +5,10 @@
 #  it requires a complex installation of pip environment + pip packages , just to make pyhgtmap work
 ######################################################################################################
 
-FROM ubuntu:noble
+# Move from ubuntu:noble to debian , which is more stable!
+# due to mysterious changes in ubuntu repository, somewhere in [Jan25-Apr25] some incredible incompatibilities raised on pybind11-rdp
+#FROM ubuntu:noble
+FROM debian:bookworm
 
 # tell that installs are made in non interactive mode
 ENV DEBIAN_FRONTEND=noninteractive

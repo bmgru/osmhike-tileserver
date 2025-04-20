@@ -5,7 +5,10 @@
 #  
 ######################################################################################################
 
-FROM ubuntu:noble
+# Move from ubuntu:noble to debian , which is more stable!
+#FROM ubuntu:noble
+FROM debian:bookworm
+
 
 # tell that installs are made in non interactive mode
 ENV DEBIAN_FRONTEND=noninteractive

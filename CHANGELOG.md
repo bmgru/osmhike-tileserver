@@ -1,4 +1,15 @@
 
+## V1.2.0
+
+Published April 2025
+
+Implementation evolution
+* Move to Debian:bookworm, due to sudden and incredible incompatibility for pybind11-rdp ( trouble with "required minimum version 3.4 for CMake" )
+* Kosmtik build phase also fails . Promote Tirex as the good solution 
+* Consequently update readme.md and tutorial 
+
+
+
 ## V1.1.0
 
 Published January 2025
