@@ -53,9 +53,9 @@ Build "import" image ( the osm data import tool )
 sudo docker-compose build import
 ```
 
-Build "tirex" image ( the tile rendering and web server )
+Build "kosmtik" image ( the tile rendering and web server )
 ```
-sudo docker-compose build tirex
+sudo docker-compose build kosmtik
 ```
 
 ## Launching the demo based on Andorra data
@@ -86,7 +86,7 @@ sudo docker-compose run import hillshade
 
 Launch the tiles web server.  Note: the first time, it may spend many minutes to download shapefiles from Internet...
 ```
-sudo docker-compose up -V tirex
+sudo docker-compose up -V kosmtik
 ```
 
 Navigate in the map : open a browser on the below url , and move the map until you see Andorra

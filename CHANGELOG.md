@@ -1,7 +1,16 @@
 
+## V1.3.0
+
+Published 27 April 2025
+
+Implementation evolution 
+* Troubles with Kosmtik solved ( thanks to liam-bh ) Move to Debian:bookworm, for better stability 
+* So Kosmtik becomes again the first proposed solution
+* Consequently update readme.md and tutorial 
+
 ## V1.2.0
 
-Published April 2025
+Published 20 April 2025
 
 Implementation evolution
 * Move to Debian:bookworm, due to sudden and incredible incompatibility for pybind11-rdp ( trouble with "required minimum version 3.4 for CMake" )
