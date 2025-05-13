@@ -130,11 +130,11 @@ import)
   ;;
 
 
-######################## create the database containing contours ############""
+######################## create the database containing contours ############
 contours | contours2)
 
   # CAUTION : before calling this:
-  #           * a polygon file $AREAPOLY.poly   is to be downloased from geobabrik  ( typically  wget http://download.geofabrik.de/europe/andorra.poly )
+  #           * a polygon file $AREAPOLY.poly   is to be downloaded from geobabrik  ( typically  wget http://download.geofabrik.de/europe/andorra.poly )
   #             it contains a list of lon/lat coordinates that define the perimeter for which we build contours
 
   # go to specific directory
@@ -145,18 +145,18 @@ contours | contours2)
   if [ "$ACTION" != "contours2" ]
   then
 
-    # STEP1 : download elevation files, and produce .osm.pbf contour file using phyghtmap
+    # STEP1 : download elevation files, and produce .osm.pbf contour file using pyhgtmap
 
     # run phyghtmap to download elevation files ( .hgt )  corresponding to $CONTOURS.poly
-    # we use --source=view1 to download freely from  www.viewfinderpanoramas.org , rather than NASA which needs a very complex registration
+    # we use --source=view1 by default ,to download freely from  www.viewfinderpanoramas.org , rather than NASA which needs a very complex registration
     #  -s 10 produces contour lines with 10 meters interval
     #  output file will be AREAPOLY_lon_xxxx_lat_yyy.osm.pbf
     POLYGON=../myfiles/$AREAPOLY
     echo ""
-    echo "***************** CONTOURS STEP1: run phyghtmap on file=$POLYGON  `date '+%H:%M:%S'` ********************"
+    echo "***************** CONTOURS STEP1: run phyghtmap on file=$POLYGON  source=$AREAPOLYSOURCE  `date '+%H:%M:%S'` ********************"
 
     rm -f $AREAPOLY*.osm.pbf
-    bash ../dem/pyhgtmap.sh  --polygon=$POLYGON -j 8 -s 10 -0 --source=view1  --max-nodes-per-tile=0 --max-nodes-per-way=0 --pbf -o $AREAPOLY
+    bash ../dem/pyhgtmap.sh  --polygon=$POLYGON -j 8 -s 10 -0 --source=$AREAPOLYSOURCE  --max-nodes-per-tile=0 --max-nodes-per-way=0 --pbf -o $AREAPOLY
   fi
 
   # STEP2 : create another database "contours"  and store contour lines , using osm2pgsql
@@ -188,11 +188,18 @@ hillshade)
 
   cd demdata
 
+  # the place where hgt files have been stored, depends on the source
+  HGTDIR=hgt/VIEW1
+  if [ "$AREAPOLYSOURCE" =  "view3" ]
+  then
+    HGTDIR=hgt/VIEW3
+  fi
+  
 
   echo ""
-  echo "************** Build the list of needed .hgt files `date '+%H:%M:%S'` ****************"
+  echo "************** Build the list of needed .hgt files from $HGTDIR`date '+%H:%M:%S'` ****************"
 
-  python3 ../dem/hgtlist.py ../myfiles/$AREAPOLY hgt/VIEW1
+  python3 ../dem/hgtlist.py ../myfiles/$AREAPOLY $HGTDIR 
 
   # process needed file for required resolution
   # this action can be repeated with different resolutions

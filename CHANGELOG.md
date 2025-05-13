@@ -1,4 +1,11 @@
 
+## V1.4.0
+
+Published 13 May 2025
+
+For countries having no "1 second arc resolution" elevation data available,  add a parameter allowing to use "3 seconds arc" instead
+Modify documentation  consequently
+ 
 ## V1.3.0
 
 Published 27 April 2025

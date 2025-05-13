@@ -1,5 +1,5 @@
 
-Copyright 2024  Bernard Maison
+Copyright 2024 2025 Bernard Maison
 
 Osmhike is a highly adapted clone of Cyclosm (https://github.com/cyclosm/cyclosm-cartocss-style/) [clone made in sept2024]
 

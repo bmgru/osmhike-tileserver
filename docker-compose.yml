@@ -59,6 +59,7 @@ services:
       # defines the files to use
       - AREAOSM       # osm.pbf file
       - AREAPOLY      # .poly file 
+      - AREAPOLYSOURCE # defines the source for downloading contours from viewfinderpanoramas.org
 
   #--------------- database server ------------------
   db:

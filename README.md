@@ -1,5 +1,6 @@
 Osmhike
 ======= 
+A project by B.Maison
 
 ## Hiking oriented tile server, based on Cyclosm
 
@@ -130,6 +131,13 @@ Then run again import phases ( Caution! it will erase previous database )
 sudo docker-compose up  -V import
 sudo docker-compose run  import contours
 sudo docker-compose run  import hillshade
+```
+
+CAUTION ! "1 arc second" resolution is not available for all countries
+( check https://viewfinderpanoramas.org/Coverage%20map%20viewfinderpanoramas_org1.htm )
+In this case, you must modify a parameter in ".env" to switch to "3 seconds arc" resolution
+```
+AREAPOLYSOURCE=view3
 ```
 
 ## Hints ##
